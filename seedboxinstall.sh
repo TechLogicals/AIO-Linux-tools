@@ -177,19 +177,22 @@ for i in "${!options[@]}"; do
                 # Install rTorrent
                 install_package rtorrent
                 
-                # Install dependencies for ruTorrent
-                install_package php-fpm php-cli php-curl php-geoip php-xml php-zip unzip
+                # Install PHP and its extensions
+                install_package php php-fpm php-cli php-curl php-geoip php-xml php-zip unzip
 
                 # Detect PHP version
                 php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
                 echo -e "${BLUE}Detected PHP version: $php_version${NC}"
+
+                # Install both generic and version-specific php-fpm
+                install_package php-fpm php$php_version-fpm
 
                 # Download and install ruTorrent
                 echo -e "${BLUE}Installing ruTorrent...${NC}"
                 sudo mkdir -p /var/www/rutorrent
                 sudo wget https://github.com/Novik/ruTorrent/archive/master.zip -O /tmp/rutorrent.zip
                 sudo unzip /tmp/rutorrent.zip -d /tmp
-                sudo cp /tmp/ruTorrent-master/* /var/www/rutorrent/
+                sudo mv /tmp/ruTorrent-master/* /var/www/rutorrent/
                 sudo rm -rf /tmp/ruTorrent-master /tmp/rutorrent.zip
                 sudo chown -R www-data:www-data /var/www/rutorrent
 
@@ -213,6 +216,9 @@ server {
 }
 EOF
 
+                # Ensure php-fpm service is enabled and started
+                sudo systemctl enable php$php_version-fpm
+                sudo systemctl start php$php_version-fpm
                 sudo systemctl restart php$php_version-fpm
 
                 setup_nginx_config "rutorrent_proxy" "8080"
