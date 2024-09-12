@@ -308,15 +308,67 @@ EOF
                 echo -e "${GREEN}Syncthing installed. Port: 8384${NC}"
                 ;;
             "Plex")
-                # Install Plex (assuming it's available in the package manager)
-                install_package plexmediaserver
-                setup_nginx_config "plex" "32400"
-                echo -e "${GREEN}Plex installed. Port: 32400${NC}"
+                echo -e "${BLUE}Installing Plex Media Server...${NC}"
                 
-                read -p "Do you have a Plex claim code? (y/n) " answer
+                # Check if the system uses apt (Debian/Ubuntu)
+                if command -v apt-get &> /dev/null; then
+                    # Add Plex repository
+                    echo deb https://downloads.plex.tv/repo/deb public main | sudo tee /etc/apt/sources.list.d/plexmediaserver.list
+                    curl https://downloads.plex.tv/plex-keys/PlexSign.key | sudo apt-key add -
+                    sudo apt-get update
+                    
+                    # Install Plex
+                    sudo apt-get install -y plexmediaserver
+                
+                # Check if the system uses yum (CentOS/RHEL)
+                elif command -v yum &> /dev/null; then
+                    sudo yum install -y https://downloads.plex.tv/plex-media-server-new/1.32.5.7349-8f4248874/redhat/plexmediaserver-1.32.5.7349-8f4248874.x86_64.rpm
+                
+                # Check if the system uses dnf (Fedora)
+                elif command -v dnf &> /dev/null; then
+                    sudo dnf install -y https://downloads.plex.tv/plex-media-server-new/1.32.5.7349-8f4248874/redhat/plexmediaserver-1.32.5.7349-8f4248874.x86_64.rpm
+                
+                # Check if the system uses pacman (Arch Linux)
+                elif command -v pacman &> /dev/null; then
+                    # Enable multilib repository if not already enabled
+                    sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
+                    sudo pacman -Sy
+
+                    # Install Plex from AUR
+                    if ! command -v yay &> /dev/null; then
+                        echo -e "${YELLOW}yay AUR helper not found. Installing yay...${NC}"
+                        sudo pacman -S --needed git base-devel
+                        git clone https://aur.archlinux.org/yay.git
+                        cd yay
+                        makepkg -si --noconfirm
+                        cd ..
+                        rm -rf yay
+                    fi
+                    yay -S plex-media-server --noconfirm
+                
+                else
+                    echo -e "${RED}Unable to install Plex Media Server. Please install it manually.${NC}"
+                    return 1
+                fi
+
+                # Start and enable Plex service
+                sudo systemctl start plexmediaserver
+                sudo systemctl enable plexmediaserver
+
+                # Setup Nginx config for Plex
+                setup_nginx_config "plex" "32400"
+                echo -e "${GREEN}Plex Media Server installed. Web interface accessible on port 32400${NC}"
+                
+                read -p "Do you have a Plex claim token? (y/n) " answer
                 if [[ $answer =~ ^[Yy]$ ]]; then
-                    read -p "Enter your Plex claim code: " claim_code
-                    sudo PLEX_CLAIM="$claim_code" dpkg-reconfigure plexmediaserver
+                    read -p "Enter your Plex claim token: " claim_token
+                    if [ -f "/etc/default/plexmediaserver" ]; then
+                        sudo sed -i "s/PLEX_CLAIM=/PLEX_CLAIM=$claim_token/" /etc/default/plexmediaserver
+                    else
+                        echo "PLEX_CLAIM=$claim_token" | sudo tee -a /etc/default/plexmediaserver
+                    fi
+                    sudo systemctl restart plexmediaserver
+                    echo -e "${GREEN}Plex claim token added. Please complete setup at http://localhost:32400/web${NC}"
                 fi
                 ;;
             "Jellyfin")
