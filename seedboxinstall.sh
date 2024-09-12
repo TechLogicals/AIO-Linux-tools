@@ -192,7 +192,7 @@ for i in "${!options[@]}"; do
                 sudo mkdir -p /var/www/rutorrent
                 sudo wget https://github.com/Novik/ruTorrent/archive/master.zip -O /tmp/rutorrent.zip
                 sudo unzip /tmp/rutorrent.zip -d /tmp
-                sudo mv /tmp/ruTorrent-master/* /var/www/rutorrent/
+                sudo cp /tmp/ruTorrent-master/* /var/www/rutorrent/
                 sudo rm -rf /tmp/ruTorrent-master /tmp/rutorrent.zip
                 sudo chown -R www-data:www-data /var/www/rutorrent
 
