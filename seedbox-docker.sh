@@ -242,6 +242,10 @@ handle_input() {
         B) # Down arrow
             ((selected_index < ${#options[@]}-1)) && ((selected_index++)) || selected_index=0
             ;;
+        C) # Right arrow (do nothing)
+            ;;
+        D) # Left arrow (do nothing)
+            ;;
         '') # Enter key
             if [[ "${options[selected_index]}" == "Quit" ]]; then
                 return 1
@@ -295,15 +299,22 @@ main_menu() {
         display_menu $selected_index
 
         # Read user input
-        read -rsn1 key
-        if [[ $key == $'\x1b' ]]; then
-            read -rsn2 key
+        read -rsn1 mode # get 1 character
+        if [[ $mode == $'\x1b' ]]; then
+            read -rsn2 mode # read 2 more chars
         fi
-
-        handle_input $key
-        if [ $? -eq 1 ]; then
-            break
-        fi
+        case $mode in
+            'q') echo QUITTING ; return ;;
+            'A') ((selected_index > 0)) && ((selected_index--)) || selected_index=$((${#options[@]}-1)) ;;
+            'B') ((selected_index < ${#options[@]}-1)) && ((selected_index++)) || selected_index=0 ;;
+            '') 
+                if [[ "${options[selected_index]}" == "Quit" ]]; then
+                    return
+                else
+                    toggle_selection $selected_index
+                fi
+                ;;
+        esac
     done
 }
 
