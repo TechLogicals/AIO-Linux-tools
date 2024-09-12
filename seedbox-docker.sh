@@ -25,6 +25,10 @@ install_docker() {
         sudo dnf -y install dnf-plugins-core
         sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
         sudo dnf install -y docker-ce docker-ce-cli containerd.io
+    elif command -v pacman &> /dev/null; then
+        # Arch Linux installation
+        sudo pacman -Sy
+        sudo pacman -S --noconfirm docker
     else
         echo -e "${RED}Unsupported package manager. Please install Docker manually.${NC}"
         exit 1
@@ -34,6 +38,7 @@ install_docker() {
     sudo systemctl enable docker
     sudo usermod -aG docker $USER
     echo -e "${GREEN}Docker installed successfully.${NC}"
+    echo -e "${YELLOW}Please log out and log back in for group changes to take effect.${NC}"
 }
 
 # Function to install Docker Compose
