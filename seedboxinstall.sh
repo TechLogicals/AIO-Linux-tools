@@ -216,14 +216,26 @@ for i in "${!options[@]}"; do
                     continue
                 fi
 
+                # Function to check command success
+                check_command() {
+                    if [ $? -ne 0 ]; then
+                        echo -e "${RED}Error: $1 failed. Check the log for details.${NC}"
+                        return 1
+                    fi
+                }
+
                 # Build and install libtorrent
                 echo -e "${BLUE}Building libtorrent...${NC}"
                 git clone https://github.com/rakshasa/libtorrent.git
                 cd libtorrent
-                ./autogen.sh
-                ./configure
-                make -j$(nproc)
-                sudo make install
+                ./autogen.sh > ../libtorrent_build.log 2>&1
+                check_command "libtorrent autogen" || return 1
+                ./configure >> ../libtorrent_build.log 2>&1
+                check_command "libtorrent configure" || return 1
+                make -j$(nproc) >> ../libtorrent_build.log 2>&1
+                check_command "libtorrent make" || return 1
+                sudo make install >> ../libtorrent_build.log 2>&1
+                check_command "libtorrent make install" || return 1
                 cd ..
                 rm -rf libtorrent
 
@@ -231,10 +243,14 @@ for i in "${!options[@]}"; do
                 echo -e "${BLUE}Building rtorrent...${NC}"
                 git clone https://github.com/rakshasa/rtorrent.git
                 cd rtorrent
-                ./autogen.sh
-                ./configure --with-xmlrpc-c
-                make -j$(nproc)
-                sudo make install
+                ./autogen.sh > ../rtorrent_build.log 2>&1
+                check_command "rtorrent autogen" || return 1
+                ./configure --with-xmlrpc-c >> ../rtorrent_build.log 2>&1
+                check_command "rtorrent configure" || return 1
+                make -j$(nproc) >> ../rtorrent_build.log 2>&1
+                check_command "rtorrent make" || return 1
+                sudo make install >> ../rtorrent_build.log 2>&1
+                check_command "rtorrent make install" || return 1
                 cd ..
                 rm -rf rtorrent
 
