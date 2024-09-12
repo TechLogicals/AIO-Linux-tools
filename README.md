@@ -21,3 +21,5 @@ The utils script installs and configures various utilities that you can select.
 The Desktops script installs different desktops on your system and configures them.
 
 ALL THESE SCRIPTS WORK ON MOST LINUX OPERATING SYSTEMS. Debian/Ubuntu, Fedora , arch etc
+
+[![asciicast](https://asciinema.org/a/C9mgbTu0GIUAw0jGcUjaonVHm.svg)](https://asciinema.org/a/C9mgbTu0GIUAw0jGcUjaonVHm)
