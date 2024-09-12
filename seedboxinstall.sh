@@ -105,7 +105,7 @@ while true; do
     esac
 done
 
-# Ensure www-data user exists
+# Function to ensure www-data user exists
 ensure_www_data_user() {
     if ! id "www-data" &>/dev/null; then
         echo -e "${BLUE}Creating www-data user...${NC}"
@@ -180,12 +180,16 @@ for i in "${!options[@]}"; do
                 # Install dependencies for ruTorrent
                 install_package php-fpm php-cli php-curl php-geoip php-xml php-zip unzip
 
+                # Detect PHP version
+                php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+                echo -e "${BLUE}Detected PHP version: $php_version${NC}"
+
                 # Download and install ruTorrent
                 echo -e "${BLUE}Installing ruTorrent...${NC}"
                 sudo mkdir -p /var/www/rutorrent
                 sudo wget https://github.com/Novik/ruTorrent/archive/master.zip -O /tmp/rutorrent.zip
                 sudo unzip /tmp/rutorrent.zip -d /tmp
-                sudo mv /tmp/ruTorrent-master/* /var/www/rutorrent/
+                sudo cp /tmp/ruTorrent-master/* /var/www/rutorrent/
                 sudo rm -rf /tmp/ruTorrent-master /tmp/rutorrent.zip
                 sudo chown -R www-data:www-data /var/www/rutorrent
 
@@ -202,14 +206,14 @@ server {
 
     location ~ \.php$ {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php$php_version-fpm.sock;
         fastcgi_index index.php;
         include fastcgi_params;
     }
 }
 EOF
 
-                sudo systemctl restart php7.4-fpm
+                sudo systemctl restart php$php_version-fpm
 
                 setup_nginx_config "rutorrent_proxy" "8080"
                 echo -e "${GREEN}rTorrent + ruTorrent installed. ruTorrent accessible on port 8080${NC}"
