@@ -81,16 +81,17 @@ EOF
     if [[ ${selected[0]} -eq 1 ]]; then
         cat << EOF >> docker-compose.yml
   rutorrent:
-    image: diameter/rtorrent-rutorrent
+    image: crazymax/rtorrent-rutorrent
     container_name: rutorrent
     ports:
-      - "8080:80"
-      - "5000:5000"
-      - "51413:51413"
-      - "6881:6881/udp"
+      - "8080:8080"
+      - "50000:50000"  # rTorrent DHT port
+      - "6881:6881/udp"  # rTorrent DHT port
+      - "8000:8000"  # XMLRPC port
+      - "9000:9000"  # WebDAV port
     volumes:
-      - ./rutorrent-data:/config
-      - $HOME/media:/downloads
+      - ./rutorrent-data:/data
+      - $HOME/media:/media
     environment:
       - PUID=1000
       - PGID=1000
@@ -261,6 +262,36 @@ toggle_selection() {
     fi
 }
 
+# Function to check if Docker is installed and running
+check_docker() {
+    if command -v docker &> /dev/null && sudo docker info &> /dev/null; then
+        echo -e "${GREEN}Docker is already installed and running.${NC}"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check if Docker Compose is installed
+check_docker_compose() {
+    if command -v docker-compose &> /dev/null; then
+        echo -e "${GREEN}Docker Compose is already installed.${NC}"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check if Portainer is running
+check_portainer() {
+    if sudo docker ps | grep -q portainer; then
+        echo -e "${GREEN}Portainer is already running.${NC}"
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Main menu loop
 main_menu() {
     options=(
@@ -308,9 +339,21 @@ if [[ ! " ${selected[@]} " =~ 1 ]]; then
     exit 1
 fi
 
-install_docker
-install_docker_compose
-install_portainer
+# Check and install Docker if necessary
+if ! check_docker; then
+    install_docker
+fi
+
+# Check and install Docker Compose if necessary
+if ! check_docker_compose; then
+    install_docker_compose
+fi
+
+# Check and install Portainer if necessary
+if ! check_portainer; then
+    install_portainer
+fi
+
 create_media_directory
 create_docker_compose
 
