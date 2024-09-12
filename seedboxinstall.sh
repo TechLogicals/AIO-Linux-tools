@@ -27,6 +27,11 @@ install_package() {
 display_menu() {
     echo -e "${BLUE}Select options to install:${NC}"
     for i in "${!options[@]}"; do
+        if [[ $i -eq $selected_index ]]; then
+            echo -ne "> "
+        else
+            echo -ne "  "
+        fi
         if [[ ${selected[i]} -eq 1 ]]; then
             echo -e "${GREEN}[X] ${options[i]}${NC}"
         else
@@ -65,6 +70,9 @@ selected=()
 for i in "${!options[@]}"; do
     selected[$i]=0
 done
+
+# Initialize selected_index
+selected_index=0
 
 # Main menu loop
 while true; do
