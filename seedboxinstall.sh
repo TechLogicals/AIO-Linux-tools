@@ -196,9 +196,51 @@ for i in "${!options[@]}"; do
     if [[ ${selected[i]} -eq 1 ]]; then
         case "${options[i]}" in
             "rTorrent + ruTorrent")
-                # Install rTorrent
-                install_package rtorrent
+                echo -e "${BLUE}Building rTorrent from source and installing ruTorrent...${NC}"
                 
+                # Install build dependencies
+                if command -v apt-get &> /dev/null; then
+                    sudo apt-get update
+                    sudo apt-get install -y build-essential automake libtool libcurl4-openssl-dev libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev
+                elif command -v dnf &> /dev/null; then
+                    sudo dnf groupinstall -y "Development Tools"
+                    sudo dnf install -y automake libtool openssl-devel zlib-devel ncurses-devel
+                elif command -v yum &> /dev/null; then
+                    sudo yum groupinstall -y "Development Tools"
+                    sudo yum install -y automake libtool openssl-devel zlib-devel ncurses-devel
+                elif command -v pacman &> /dev/null; then
+                    sudo pacman -Sy
+                    sudo pacman -S --noconfirm base-devel automake libtool openssl zlib ncurses
+                else
+                    echo -e "${RED}Unable to install build dependencies. Please install them manually.${NC}"
+                    continue
+                fi
+
+                # Build and install libtorrent
+                echo -e "${BLUE}Building libtorrent...${NC}"
+                git clone https://github.com/rakshasa/libtorrent.git
+                cd libtorrent
+                ./autogen.sh
+                ./configure
+                make -j$(nproc)
+                sudo make install
+                cd ..
+                rm -rf libtorrent
+
+                # Build and install rtorrent
+                echo -e "${BLUE}Building rtorrent...${NC}"
+                git clone https://github.com/rakshasa/rtorrent.git
+                cd rtorrent
+                ./autogen.sh
+                ./configure --with-xmlrpc-c
+                make -j$(nproc)
+                sudo make install
+                cd ..
+                rm -rf rtorrent
+
+                # Update shared library cache
+                sudo ldconfig
+
                 # Install PHP and its extensions
                 install_package php php-fpm php-cli php-curl php-geoip php-xml php-zip unzip
 
@@ -250,7 +292,7 @@ EOF
                 fi
 
                 setup_nginx_config "rutorrent_proxy" "8080"
-                echo -e "${GREEN}rTorrent + ruTorrent installed. ruTorrent accessible on port 8080${NC}"
+                echo -e "${GREEN}rTorrent built and installed. ruTorrent accessible on port 8080${NC}"
                 
                 read -p "Do you want to password protect ruTorrent? (y/n) " answer
                 if [[ $answer =~ ^[Yy]$ ]]; then
@@ -538,10 +580,44 @@ EOF
                 fi
                 ;;
             "Jellyfin")
-                # Install Jellyfin (assuming it's available in the package manager)
-                install_package jellyfin
+                echo -e "${BLUE}Installing Jellyfin...${NC}"
+                
+                if command -v apt-get &> /dev/null; then
+                    # For Debian/Ubuntu systems
+                    sudo apt install -y apt-transport-https
+                    wget -O - https://repo.jellyfin.org/jellyfin_team.gpg.key | sudo apt-key add -
+                    echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/$( awk -F'=' '/^ID=/{ print $NF }' /etc/os-release ) $( awk -F'=' '/^VERSION_CODENAME=/{ print $NF }' /etc/os-release ) main" | sudo tee /etc/apt/sources.list.d/jellyfin.list
+                    sudo apt update
+                    sudo apt install -y jellyfin
+                elif command -v dnf &> /dev/null; then
+                    # For Fedora systems
+                    sudo dnf install -y https://repo.jellyfin.org/releases/server/fedora/jellyfin-fedora.repo
+                    sudo dnf install -y jellyfin
+                elif command -v yum &> /dev/null; then
+                    # For CentOS/RHEL systems
+                    sudo yum install -y https://repo.jellyfin.org/releases/server/centos/jellyfin-centos.repo
+                    sudo yum install -y jellyfin
+                elif command -v pacman &> /dev/null; then
+                    # For Arch Linux
+                    if ! command -v yay &> /dev/null; then
+                        echo -e "${YELLOW}yay AUR helper not found. Installing yay...${NC}"
+                        sudo pacman -S --needed git base-devel
+                        git clone https://aur.archlinux.org/yay.git
+                        cd yay
+                        makepkg -si --noconfirm
+                        cd ..
+                        rm -rf yay
+                    fi
+                    yay -S jellyfin --noconfirm
+                else
+                    echo -e "${RED}Unable to install Jellyfin. Please install it manually.${NC}"
+                    continue
+                fi
+
+                sudo systemctl start jellyfin
+                sudo systemctl enable jellyfin
                 setup_nginx_config "jellyfin" "8096"
-                echo -e "${GREEN}Jellyfin installed. Port: 8096${NC}"
+                echo -e "${GREEN}Jellyfin installed. Web interface accessible on port 8096${NC}"
                 ;;
             "Install SSL Certificate")
                 install_package certbot python3-certbot-nginx
