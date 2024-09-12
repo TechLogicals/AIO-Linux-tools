@@ -126,22 +126,24 @@ install_package nginx wget unzip
 sudo systemctl start nginx
 sudo systemctl enable nginx
 
-# Check and create Nginx configuration directories if they don't exist
-if [ ! -d "/etc/nginx/sites-available" ]; then
-    sudo mkdir -p /etc/nginx/sites-available
-    echo -e "${BLUE}Created /etc/nginx/sites-available directory${NC}"
-fi
+# Function to ensure Nginx directories exist
+ensure_nginx_dirs() {
+    if [ ! -d "/etc/nginx/sites-available" ]; then
+        sudo mkdir -p /etc/nginx/sites-available
+        echo -e "${BLUE}Created /etc/nginx/sites-available directory${NC}"
+    fi
 
-if [ ! -d "/etc/nginx/sites-enabled" ]; then
-    sudo mkdir -p /etc/nginx/sites-enabled
-    echo -e "${BLUE}Created /etc/nginx/sites-enabled directory${NC}"
-fi
+    if [ ! -d "/etc/nginx/sites-enabled" ]; then
+        sudo mkdir -p /etc/nginx/sites-enabled
+        echo -e "${BLUE}Created /etc/nginx/sites-enabled directory${NC}"
+    fi
 
-# Check if the main Nginx configuration includes our sites-enabled directory
-if ! grep -q "include /etc/nginx/sites-enabled/\*" /etc/nginx/nginx.conf; then
-    sudo sed -i '/http {/a \    include /etc/nginx/sites-enabled/*;' /etc/nginx/nginx.conf
-    echo -e "${BLUE}Updated Nginx configuration to include sites-enabled directory${NC}"
-fi
+    # Check if the main Nginx configuration includes our sites-enabled directory
+    if ! grep -q "include /etc/nginx/sites-enabled/\*" /etc/nginx/nginx.conf; then
+        sudo sed -i '/http {/a \    include /etc/nginx/sites-enabled/*;' /etc/nginx/nginx.conf
+        echo -e "${BLUE}Updated Nginx configuration to include sites-enabled directory${NC}"
+    fi
+}
 
 # Function to setup Nginx config
 setup_nginx_config() {
@@ -182,6 +184,9 @@ EOF
     fi
 }
 
+# After menu selection, before installing anything:
+ensure_nginx_dirs
+
 # Prompt for domain name
 read -p "Enter your domain name (e.g., example.com): " domain
 echo -e "${GREEN}Domain set to: $domain${NC}"
@@ -201,10 +206,8 @@ for i in "${!options[@]}"; do
                 php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
                 echo -e "${BLUE}Detected PHP version: $php_version${NC}"
 
-                # Try to install version-specific php-fpm, fall back to generic if not available
-                if ! install_package php$php_version-fpm; then
-                    echo -e "${YELLOW}Specific PHP-FPM version not found. Using generic PHP-FPM.${NC}"
-                fi
+                # Install both generic and version-specific php-fpm
+                install_package php-fpm php$php_version-fpm
 
                 # Download and install ruTorrent
                 echo -e "${BLUE}Installing ruTorrent...${NC}"
@@ -327,14 +330,6 @@ EOF
                 sudo certbot --nginx -d $domain
                 ;;
         esac
-    fi
-done
-
-# Create symlinks for all installed applications
-for app in /etc/nginx/sites-available/*; do
-    app_name=$(basename "$app")
-    if [ ! -f "/etc/nginx/sites-enabled/$app_name" ]; then
-        sudo ln -s "$app" "/etc/nginx/sites-enabled/"
     fi
 done
 
