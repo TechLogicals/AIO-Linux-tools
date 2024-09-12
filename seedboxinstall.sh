@@ -105,6 +105,19 @@ while true; do
     esac
 done
 
+# Ensure www-data user exists
+ensure_www_data_user() {
+    if ! id "www-data" &>/dev/null; then
+        echo -e "${BLUE}Creating www-data user...${NC}"
+        sudo useradd -r -s /usr/sbin/nologin www-data
+        echo -e "${GREEN}www-data user created.${NC}"
+    else
+        echo -e "${GREEN}www-data user already exists.${NC}"
+    fi
+}
+
+ensure_www_data_user
+
 # Install Nginx, wget, and unzip
 echo -e "${BLUE}Installing Nginx, wget, and unzip...${NC}"
 install_package nginx wget unzip
