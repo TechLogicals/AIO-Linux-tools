@@ -184,15 +184,17 @@ for i in "${!options[@]}"; do
                 php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
                 echo -e "${BLUE}Detected PHP version: $php_version${NC}"
 
-                # Install both generic and version-specific php-fpm
-                install_package php-fpm php$php_version-fpm
+                # Try to install version-specific php-fpm, fall back to generic if not available
+                if ! install_package php$php_version-fpm; then
+                    echo -e "${YELLOW}Specific PHP-FPM version not found. Using generic PHP-FPM.${NC}"
+                fi
 
                 # Download and install ruTorrent
                 echo -e "${BLUE}Installing ruTorrent...${NC}"
                 sudo mkdir -p /var/www/rutorrent
                 sudo wget https://github.com/Novik/ruTorrent/archive/master.zip -O /tmp/rutorrent.zip
                 sudo unzip /tmp/rutorrent.zip -d /tmp
-                sudo cp /tmp/ruTorrent-master/* /var/www/rutorrent/
+                sudo cp -r /tmp/ruTorrent-master/* /var/www/rutorrent/
                 sudo rm -rf /tmp/ruTorrent-master /tmp/rutorrent.zip
                 sudo chown -R www-data:www-data /var/www/rutorrent
 
@@ -209,7 +211,7 @@ server {
 
     location ~ \.php$ {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/var/run/php/php$php_version-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php-fpm.sock;
         fastcgi_index index.php;
         include fastcgi_params;
     }
@@ -217,9 +219,15 @@ server {
 EOF
 
                 # Ensure php-fpm service is enabled and started
-                sudo systemctl enable php$php_version-fpm
-                sudo systemctl start php$php_version-fpm
-                sudo systemctl restart php$php_version-fpm
+                if systemctl list-unit-files | grep -q php$php_version-fpm; then
+                    sudo systemctl enable php$php_version-fpm
+                    sudo systemctl start php$php_version-fpm
+                    sudo systemctl restart php$php_version-fpm
+                else
+                    sudo systemctl enable php-fpm
+                    sudo systemctl start php-fpm
+                    sudo systemctl restart php-fpm
+                fi
 
                 setup_nginx_config "rutorrent_proxy" "8080"
                 echo -e "${GREEN}rTorrent + ruTorrent installed. ruTorrent accessible on port 8080${NC}"
