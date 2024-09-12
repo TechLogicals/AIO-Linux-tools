@@ -148,6 +148,12 @@ setup_nginx_config() {
     local app_name=$1
     local port=$2
     
+    # Check if domain variable is set, if not, use a placeholder
+    if [ -z "$domain" ]; then
+        domain="your_domain.com"
+        echo -e "${YELLOW}Warning: Domain not set. Using placeholder: $domain${NC}"
+    fi
+    
     cat << EOF | sudo tee /etc/nginx/sites-available/$app_name
 server {
     listen 80;
@@ -165,9 +171,20 @@ EOF
 
     # Create symlink only if it doesn't already exist
     if [ ! -f "/etc/nginx/sites-enabled/$app_name" ]; then
-        sudo ln -s /etc/nginx/sites-available/$app_name /etc/nginx/sites-enabled/
+        if [ -f "/etc/nginx/sites-available/$app_name" ]; then
+            sudo ln -s /etc/nginx/sites-available/$app_name /etc/nginx/sites-enabled/
+            echo -e "${GREEN}Nginx configuration for $app_name enabled.${NC}"
+        else
+            echo -e "${RED}Error: Nginx configuration file for $app_name not found in sites-available.${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Nginx configuration for $app_name already enabled.${NC}"
     fi
 }
+
+# Prompt for domain name
+read -p "Enter your domain name (e.g., example.com): " domain
+echo -e "${GREEN}Domain set to: $domain${NC}"
 
 # Install selected options
 for i in "${!options[@]}"; do
@@ -306,7 +323,6 @@ EOF
                 echo -e "${GREEN}Jellyfin installed. Port: 8096${NC}"
                 ;;
             "Install SSL Certificate")
-                read -p "Enter your domain name: " domain
                 install_package certbot python3-certbot-nginx
                 sudo certbot --nginx -d $domain
                 ;;
