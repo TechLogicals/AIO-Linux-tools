@@ -225,8 +225,11 @@ for i in "${!options[@]}"; do
                 }
 
                 # Build and install libtorrent
-                echo -e "${BLUE}Building libtorrent...${NC}"
+                echo -e "${BLUE}Downloading libtorrent source...${NC}"
                 git clone https://github.com/rakshasa/libtorrent.git
+                check_command "libtorrent source download" || return 1
+                
+                echo -e "${BLUE}Building libtorrent...${NC}"
                 cd libtorrent
                 ./autogen.sh > ../libtorrent_build.log 2>&1
                 check_command "libtorrent autogen" || return 1
@@ -240,8 +243,11 @@ for i in "${!options[@]}"; do
                 rm -rf libtorrent
 
                 # Build and install rtorrent
-                echo -e "${BLUE}Building rtorrent...${NC}"
+                echo -e "${BLUE}Downloading rtorrent source...${NC}"
                 git clone https://github.com/rakshasa/rtorrent.git
+                check_command "rtorrent source download" || return 1
+                
+                echo -e "${BLUE}Building rtorrent...${NC}"
                 cd rtorrent
                 ./autogen.sh > ../rtorrent_build.log 2>&1
                 check_command "rtorrent autogen" || return 1
@@ -268,11 +274,16 @@ for i in "${!options[@]}"; do
                 install_package php-fpm php$php_version-fpm
 
                 # Download and install ruTorrent
-                echo -e "${BLUE}Installing ruTorrent...${NC}"
+                echo -e "${BLUE}Downloading ruTorrent...${NC}"
                 sudo mkdir -p /var/www/rutorrent
                 sudo wget https://github.com/Novik/ruTorrent/archive/master.zip -O /tmp/rutorrent.zip
+                check_command "ruTorrent download" || return 1
+
+                echo -e "${BLUE}Installing ruTorrent...${NC}"
                 sudo unzip /tmp/rutorrent.zip -d /tmp
+                check_command "ruTorrent unzip" || return 1
                 sudo cp -r /tmp/ruTorrent-master/* /var/www/rutorrent/
+                check_command "ruTorrent copy" || return 1
                 sudo rm -rf /tmp/ruTorrent-master /tmp/rutorrent.zip
                 sudo chown -R www-data:www-data /var/www/rutorrent
 
