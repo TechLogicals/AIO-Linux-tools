@@ -23,21 +23,10 @@ install_package() {
     fi
 }
 
-# Install Nginx first
-echo -e "${BLUE}Installing Nginx web server...${NC}"
-install_package nginx
-sudo systemctl start nginx
-sudo systemctl enable nginx
-
 # Function to display menu
 display_menu() {
     echo -e "${BLUE}Select options to install:${NC}"
     for i in "${!options[@]}"; do
-        if [[ $i -eq $selected_index ]]; then
-            echo -ne "> "
-        else
-            echo -ne "  "
-        fi
         if [[ ${selected[i]} -eq 1 ]]; then
             echo -e "${GREEN}[X] ${options[i]}${NC}"
         else
@@ -71,12 +60,11 @@ options=(
     "Quit"
 )
 
-# Initialize selected array and selected_index
+# Initialize selected array
 selected=()
 for i in "${!options[@]}"; do
     selected[$i]=0
 done
-selected_index=0
 
 # Main menu loop
 while true; do
@@ -102,6 +90,9 @@ while true; do
             ;;
     esac
 done
+
+# Install Nginx
+install_package nginx
 
 # Function to setup Nginx config
 setup_nginx_config() {
@@ -131,11 +122,45 @@ for i in "${!options[@]}"; do
     if [[ ${selected[i]} -eq 1 ]]; then
         case "${options[i]}" in
             "rTorrent + ruTorrent")
+                # Install rTorrent
                 install_package rtorrent
-                # Install ruTorrent (assuming it's available in the package manager)
-                install_package rutorrent
-                setup_nginx_config "rutorrent" "8080"
-                echo -e "${GREEN}rTorrent + ruTorrent installed. Port: 8080${NC}"
+                
+                # Install dependencies for ruTorrent
+                install_package php-fpm php-cli php-curl php-geoip php-xml php-zip unzip
+
+                # Download and install ruTorrent
+                echo -e "${BLUE}Installing ruTorrent...${NC}"
+                sudo mkdir -p /var/www/rutorrent
+                sudo wget https://github.com/Novik/ruTorrent/archive/master.zip -O /tmp/rutorrent.zip
+                sudo unzip /tmp/rutorrent.zip -d /tmp
+                sudo mv /tmp/ruTorrent-master/* /var/www/rutorrent/
+                sudo rm -rf /tmp/ruTorrent-master /tmp/rutorrent.zip
+                sudo chown -R www-data:www-data /var/www/rutorrent
+
+                # Configure Nginx for ruTorrent
+                cat << EOF | sudo tee /etc/nginx/sites-available/rutorrent
+server {
+    listen 8080;
+    root /var/www/rutorrent;
+    index index.html index.htm index.php;
+
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+    }
+}
+EOF
+
+                sudo systemctl restart php7.4-fpm
+
+                setup_nginx_config "rutorrent_proxy" "8080"
+                echo -e "${GREEN}rTorrent + ruTorrent installed. ruTorrent accessible on port 8080${NC}"
                 
                 read -p "Do you want to password protect ruTorrent? (y/n) " answer
                 if [[ $answer =~ ^[Yy]$ ]]; then
@@ -219,14 +244,16 @@ for i in "${!options[@]}"; do
     fi
 done
 
+# Create symlinks for all installed applications
+for app in /etc/nginx/sites-available/*; do
+    app_name=$(basename "$app")
+    if [ ! -f "/etc/nginx/sites-enabled/$app_name" ]; then
+        sudo ln -s "$app" "/etc/nginx/sites-enabled/"
+    fi
+done
+
+# Restart Nginx to apply all changes
 sudo systemctl restart nginx
 
-echo -e "${GREEN}Installation complete!, you will need to setup authentication on first run of most items${NC}"
-echo -e "Thanks for using this script by Tech Logicals
-
-
-
-
-
-
-
+echo -e "${GREEN}Installation complete! You will need to set up authentication on first run for most items${NC}"
+echo -e "Thanks for using this script by Tech Logicals"
