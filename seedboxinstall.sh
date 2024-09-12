@@ -296,15 +296,8 @@ EOF
                 # Setup Nginx config for Deluge
                 setup_nginx_config "deluge" "8112"
                 echo -e "${GREEN}Deluge installed. Web interface accessible on port 8112${NC}"
-                
-                read -p "Do you want to set a password for Deluge? (y/n) " answer
-                if [[ $answer =~ ^[Yy]$ ]]; then
-                    read -s -p "Enter password for Deluge: " deluge_pass
-                    echo
-                    echo "deluge:$deluge_pass:10" >> ~/.config/deluge/auth
-                    sudo systemctl restart deluged deluge-web
-                    echo -e "${GREEN}Password set for Deluge. Please use this password to log in.${NC}"
-                fi
+                echo -e "${YELLOW}Please use the default credentials to log in.${NC}"
+                echo -e "${YELLOW}You can change the password after your first login.${NC}"
                 ;;
             "Transmission")
                 install_package transmission-daemon
@@ -312,16 +305,78 @@ EOF
                 echo -e "${GREEN}Transmission installed. Port: 9091${NC}"
                 ;;
             "Radarr")
-                # Install Radarr (assuming it's available in the package manager)
-                install_package radarr
+                echo -e "${BLUE}Installing Radarr...${NC}"
+                
+                if command -v apt-get &> /dev/null; then
+                    # For Debian/Ubuntu systems
+                    sudo apt-get install -y curl
+                    sudo curl -o /etc/apt/trusted.gpg.d/radarr.asc https://radarr.servarr.com/radarr.asc
+                    echo "deb https://radarr.servarr.com/apt/debian bullseye main" | sudo tee /etc/apt/sources.list.d/radarr.list
+                    sudo apt-get update
+                    sudo apt-get install -y radarr
+                elif command -v yum &> /dev/null || command -v dnf &> /dev/null; then
+                    # For CentOS/RHEL/Fedora systems
+                    sudo yum install -y yum-utils
+                    sudo yum-config-manager --add-repo https://radarr.servarr.com/yum/radarr.repo
+                    sudo yum install -y radarr
+                elif command -v pacman &> /dev/null; then
+                    # For Arch Linux
+                    if ! command -v yay &> /dev/null; then
+                        echo -e "${YELLOW}yay AUR helper not found. Installing yay...${NC}"
+                        sudo pacman -S --needed git base-devel
+                        git clone https://aur.archlinux.org/yay.git
+                        cd yay
+                        makepkg -si --noconfirm
+                        cd ..
+                        rm -rf yay
+                    fi
+                    yay -S radarr --noconfirm
+                else
+                    echo -e "${RED}Unable to install Radarr. Please install it manually.${NC}"
+                    continue
+                fi
+
+                sudo systemctl start radarr
+                sudo systemctl enable radarr
                 setup_nginx_config "radarr" "7878"
-                echo -e "${GREEN}Radarr installed. Port: 7878${NC}"
+                echo -e "${GREEN}Radarr installed. Web interface accessible on port 7878${NC}"
                 ;;
             "Sonarr")
-                # Install Sonarr (assuming it's available in the package manager)
-                install_package sonarr
+                echo -e "${BLUE}Installing Sonarr...${NC}"
+                
+                if command -v apt-get &> /dev/null; then
+                    # For Debian/Ubuntu systems
+                    sudo apt-get install -y curl
+                    sudo curl -o /etc/apt/trusted.gpg.d/sonarr.asc https://apt.sonarr.tv/sonarr.asc
+                    echo "deb https://apt.sonarr.tv/debian bullseye main" | sudo tee /etc/apt/sources.list.d/sonarr.list
+                    sudo apt-get update
+                    sudo apt-get install -y sonarr
+                elif command -v yum &> /dev/null || command -v dnf &> /dev/null; then
+                    # For CentOS/RHEL/Fedora systems
+                    sudo yum install -y yum-utils
+                    sudo yum-config-manager --add-repo https://download.sonarr.tv/yum/sonarr.repo
+                    sudo yum install -y sonarr
+                elif command -v pacman &> /dev/null; then
+                    # For Arch Linux
+                    if ! command -v yay &> /dev/null; then
+                        echo -e "${YELLOW}yay AUR helper not found. Installing yay...${NC}"
+                        sudo pacman -S --needed git base-devel
+                        git clone https://aur.archlinux.org/yay.git
+                        cd yay
+                        makepkg -si --noconfirm
+                        cd ..
+                        rm -rf yay
+                    fi
+                    yay -S sonarr --noconfirm
+                else
+                    echo -e "${RED}Unable to install Sonarr. Please install it manually.${NC}"
+                    continue
+                fi
+
+                sudo systemctl start sonarr
+                sudo systemctl enable sonarr
                 setup_nginx_config "sonarr" "8989"
-                echo -e "${GREEN}Sonarr installed. Port: 8989${NC}"
+                echo -e "${GREEN}Sonarr installed. Web interface accessible on port 8989${NC}"
                 ;;
             "Jackett")
                 # Install Jackett (assuming it's available in the package manager)
