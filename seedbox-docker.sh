@@ -70,6 +70,13 @@ create_media_directory() {
     echo -e "${GREEN}Media directory created successfully.${NC}"
 }
 
+# Function to create appdata directory
+create_appdata_directory() {
+    echo -e "${BLUE}Creating appdata directory...${NC}"
+    mkdir -p $HOME/appdata
+    echo -e "${GREEN}Appdata directory created successfully.${NC}"
+}
+
 # Function to create docker-compose.yml
 create_docker_compose() {
     echo -e "${BLUE}Creating docker-compose.yml...${NC}"
@@ -81,17 +88,16 @@ EOF
     if [[ ${selected[0]} -eq 1 ]]; then
         cat << EOF >> docker-compose.yml
   rutorrent:
-    image: crazymax/rtorrent-rutorrent
+    image: diameter/rtorrent-rutorrent
     container_name: rutorrent
     ports:
-      - "8080:8080"
-      - "50000:50000"  # rTorrent DHT port
-      - "6881:6881/udp"  # rTorrent DHT port
-      - "8000:8000"  # XMLRPC port
-      - "9000:9000"  # WebDAV port
+      - "8080:80"
+      - "5000:5000"
+      - "51413:51413"
+      - "6881:6881/udp"
     volumes:
-      - ./rutorrent-data:/data
-      - $HOME/media:/media
+      - $HOME/appdata/rutorrent:/config
+      - $HOME/media:/downloads
     environment:
       - PUID=1000
       - PGID=1000
@@ -108,8 +114,8 @@ EOF
     ports:
       - "8112:8112"
     volumes:
-      - ./deluge-data:/config
-      - $HOME/media:/media
+      - $HOME/appdata/deluge:/config
+      - $HOME/media:/downloads
     restart: always
 EOF
     fi
@@ -122,8 +128,8 @@ EOF
     ports:
       - "9091:9091"
     volumes:
-      - ./transmission-data:/config
-      - $HOME/media:/media
+      - $HOME/appdata/transmission:/config
+      - $HOME/media:/downloads
     restart: always
 EOF
     fi
@@ -136,7 +142,7 @@ EOF
     ports:
       - "7878:7878"
     volumes:
-      - ./radarr-data:/config
+      - $HOME/appdata/radarr:/config
       - $HOME/media:/media
     restart: always
 EOF
@@ -150,7 +156,7 @@ EOF
     ports:
       - "8989:8989"
     volumes:
-      - ./sonarr-data:/config
+      - $HOME/appdata/sonarr:/config
       - $HOME/media:/media
     restart: always
 EOF
@@ -164,7 +170,7 @@ EOF
     ports:
       - "9117:9117"
     volumes:
-      - ./jackett-data:/config
+      - $HOME/appdata/jackett:/config
       - $HOME/media:/media
     restart: always
 EOF
@@ -178,7 +184,7 @@ EOF
     ports:
       - "5055:5055"
     volumes:
-      - ./overseerr-data:/config
+      - $HOME/appdata/overseerr:/config
     restart: always
 EOF
     fi
@@ -193,7 +199,7 @@ EOF
       - "22000:22000"
       - "21027:21027/udp"
     volumes:
-      - ./syncthing-data:/config
+      - $HOME/appdata/syncthing:/config
       - $HOME/media:/media
     restart: always
 EOF
@@ -215,7 +221,7 @@ EOF
       - VERSION=docker
       - PLEX_CLAIM=${PLEX_CLAIM}
     volumes:
-      - ./plex-data:/config
+      - $HOME/appdata/plex:/config
       - $HOME/media:/media
     restart: unless-stopped
 EOF
@@ -229,7 +235,7 @@ EOF
     ports:
       - "8096:8096"
     volumes:
-      - ./jellyfin-data:/config
+      - $HOME/appdata/jellyfin:/config
       - $HOME/media:/media
     restart: always
 EOF
@@ -354,6 +360,7 @@ if ! check_portainer; then
     install_portainer
 fi
 
+create_appdata_directory
 create_media_directory
 create_docker_compose
 
@@ -362,4 +369,5 @@ sudo docker-compose up -d
 
 echo -e "${GREEN}Installation complete! Access Portainer at http://your-ip:9000 to manage your containers.${NC}"
 echo -e "${YELLOW}Your media files are stored in $HOME/media${NC}"
+echo -e "${YELLOW}Your application data files are stored in $HOME/appdata${NC}"
 echo -e "Thanks for using this script by Tech Logicals"
