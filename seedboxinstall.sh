@@ -262,15 +262,48 @@ EOF
                 fi
                 ;;
             "Deluge")
-                install_package deluged deluge-web
-                setup_nginx_config "deluge" "8112"
-                echo -e "${GREEN}Deluge installed. Port: 8112${NC}"
+                echo -e "${BLUE}Installing Deluge...${NC}"
                 
-                read -p "Do you want to password protect Deluge? (y/n) " answer
+                # Function to install Deluge
+                install_deluge() {
+                    if command -v apt-get &> /dev/null; then
+                        sudo apt-get update
+                        sudo apt-get install -y deluged deluge-web
+                    elif command -v dnf &> /dev/null; then
+                        sudo dnf install -y deluge-daemon deluge-web
+                    elif command -v yum &> /dev/null; then
+                        sudo yum install -y epel-release
+                        sudo yum install -y deluge-daemon deluge-web
+                    elif command -v pacman &> /dev/null; then
+                        sudo pacman -Sy
+                        sudo pacman -S --noconfirm deluge
+                    else
+                        echo -e "${RED}Unable to install Deluge. Please install it manually.${NC}"
+                        return 1
+                    fi
+                }
+
+                # Install Deluge
+                if ! install_deluge; then
+                    echo -e "${RED}Failed to install Deluge. Skipping...${NC}"
+                    continue
+                fi
+
+                # Start and enable Deluge services
+                sudo systemctl start deluged deluge-web
+                sudo systemctl enable deluged deluge-web
+
+                # Setup Nginx config for Deluge
+                setup_nginx_config "deluge" "8112"
+                echo -e "${GREEN}Deluge installed. Web interface accessible on port 8112${NC}"
+                
+                read -p "Do you want to set a password for Deluge? (y/n) " answer
                 if [[ $answer =~ ^[Yy]$ ]]; then
                     read -s -p "Enter password for Deluge: " deluge_pass
                     echo
                     echo "deluge:$deluge_pass:10" >> ~/.config/deluge/auth
+                    sudo systemctl restart deluged deluge-web
+                    echo -e "${GREEN}Password set for Deluge. Please use this password to log in.${NC}"
                 fi
                 ;;
             "Transmission")
