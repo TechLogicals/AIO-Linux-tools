@@ -16,6 +16,8 @@ detect_package_manager() {
 }
 
 # Function to install packages based on the detected package manager
+
+
 install_packages() {
     local package_manager=$1
     shift
@@ -24,16 +26,16 @@ install_packages() {
     case $package_manager in
         apt)
             sudo apt-get update
-            sudo apt-get install -y "${packages[@]}"
+            sudo apt-get install -y "${packages[@]}" || true
             ;;
         dnf)
-            sudo dnf install -y "${packages[@]}"
+            sudo dnf install -y "${packages[@]}" || true
             ;;
         pacman)
-            sudo pacman -Syu --noconfirm "${packages[@]}"
+            sudo pacman -Syu --noconfirm "${packages[@]}" || true
             ;;
         zypper)
-            sudo zypper install -y "${packages[@]}"
+            sudo zypper install -y "${packages[@]}" || true
             ;;
         *)
             echo "Unsupported package manager. Please install the required packages manually."
@@ -44,17 +46,43 @@ install_packages() {
 
 # Detect the package manager
 package_manager=$(detect_package_manager)
-echo "Detected package manager: $package_manager"
 
 # Install dependencies
 echo "Installing dependencies..."
 dependencies=(
-    git meson ninja gcc cmake libxcb-dev libx11-dev libwayland-dev libxkbcommon-dev
-    libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libseat-dev libxcb-composite0-dev
-    libevdev-dev libudev-dev libinput-dev libdbus-1-dev libsystemd-dev libpcre2-dev
-    libxcb-present-dev libxcb-xfixes0-dev libxcb-render0-dev libxcb-randr0-dev
-    libxcb-util-dev libxcb-res0-dev libxcb-icccm4-dev libxcb-ewmh-dev
+    git meson ninja gcc cmake pkg-config
+    libwayland-dev libwlroots-dev wayland-protocols
+    libegl1-mesa-dev libgles2-mesa-dev libdrm-dev libgbm-dev
+    libinput-dev libxkbcommon-dev libudev-dev libpixman-1-dev
+    libseat-dev libxcb-dri3-dev libxcb-present-dev
+    libxcb-composite0-dev libxcb-render-util0-dev
+    libxcb-ewmh-dev libxcb-icccm4-dev libxcb-res0-dev
+    libxcb-xinput-dev libxcb-xkb-dev libxcb-cursor-dev
 )
+
+# Arch Linux specific package names
+if [ "$package_manager" = "pacman" ]; then
+    dependencies=(
+        git meson ninja gcc cmake pkgconf
+        wayland wayland-protocols wlroots
+        mesa libdrm libinput libxkbcommon
+        udev pixman libseat libxcb xcb-util-wm
+        xcb-util-renderutil
+    )
+fi
+
+# Fedora specific package names
+if [ "$package_manager" = "dnf" ]; then
+    dependencies=(
+        git meson ninja-build gcc cmake pkgconf
+        wayland-devel wayland-protocols-devel wlroots-devel
+        mesa-libEGL-devel mesa-libGLES-devel libdrm-devel
+        libinput-devel libxkbcommon-devel systemd-devel
+        pixman-devel libseat-devel libxcb-devel
+        xcb-util-wm-devel xcb-util-renderutil-devel
+    )
+fi
+
 install_packages "$package_manager" "${dependencies[@]}"
 
 # Clone and build Hyprland
