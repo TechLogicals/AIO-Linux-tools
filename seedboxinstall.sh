@@ -300,9 +300,21 @@ EOF
                 echo -e "${YELLOW}You can change the password after your first login.${NC}"
                 ;;
             "Transmission")
-                install_package transmission-daemon
+                echo -e "${BLUE}Installing Transmission...${NC}"
+                if command -v apt-get &> /dev/null; then
+                    sudo apt-get install -y transmission-daemon
+                elif command -v yum &> /dev/null || command -v dnf &> /dev/null; then
+                    sudo yum install -y transmission-daemon
+                elif command -v pacman &> /dev/null; then
+                    sudo pacman -S --noconfirm transmission-cli
+                else
+                    echo -e "${RED}Unable to install Transmission. Please install it manually.${NC}"
+                    continue
+                fi
+                sudo systemctl start transmission-daemon
+                sudo systemctl enable transmission-daemon
                 setup_nginx_config "transmission" "9091"
-                echo -e "${GREEN}Transmission installed. Port: 9091${NC}"
+                echo -e "${GREEN}Transmission installed. Web interface accessible on port 9091${NC}"
                 ;;
             "Radarr")
                 echo -e "${BLUE}Installing Radarr...${NC}"
@@ -379,21 +391,87 @@ EOF
                 echo -e "${GREEN}Sonarr installed. Web interface accessible on port 8989${NC}"
                 ;;
             "Jackett")
-                # Install Jackett (assuming it's available in the package manager)
-                install_package jackett
+                echo -e "${BLUE}Installing Jackett...${NC}"
+                if command -v apt-get &> /dev/null; then
+                    # For Debian/Ubuntu systems
+                    sudo apt-get install -y curl
+                    curl -sL https://jackett.servarr.com/install_latest.sh | sudo bash
+                elif command -v yum &> /dev/null || command -v dnf &> /dev/null; then
+                    # For CentOS/RHEL/Fedora systems
+                    sudo yum install -y curl
+                    curl -sL https://jackett.servarr.com/install_latest.sh | sudo bash
+                elif command -v pacman &> /dev/null; then
+                    # For Arch Linux
+                    if ! command -v yay &> /dev/null; then
+                        echo -e "${YELLOW}yay AUR helper not found. Installing yay...${NC}"
+                        sudo pacman -S --needed git base-devel
+                        git clone https://aur.archlinux.org/yay.git
+                        cd yay
+                        makepkg -si --noconfirm
+                        cd ..
+                        rm -rf yay
+                    fi
+                    yay -S jackett --noconfirm
+                else
+                    echo -e "${RED}Unable to install Jackett. Please install it manually.${NC}"
+                    continue
+                fi
+                sudo systemctl start jackett
+                sudo systemctl enable jackett
                 setup_nginx_config "jackett" "9117"
-                echo -e "${GREEN}Jackett installed. Port: 9117${NC}"
+                echo -e "${GREEN}Jackett installed. Web interface accessible on port 9117${NC}"
                 ;;
             "Overseerr")
-                # Install Overseerr (assuming it's available in the package manager)
-                install_package overseerr
+                echo -e "${BLUE}Installing Overseerr...${NC}"
+                if command -v apt-get &> /dev/null || command -v yum &> /dev/null || command -v dnf &> /dev/null; then
+                    # For Debian/Ubuntu and CentOS/RHEL/Fedora systems
+                    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+                    sudo apt-get install -y nodejs || sudo yum install -y nodejs
+                    sudo npm install -g overseerr
+                elif command -v pacman &> /dev/null; then
+                    # For Arch Linux
+                    if ! command -v yay &> /dev/null; then
+                        echo -e "${YELLOW}yay AUR helper not found. Installing yay...${NC}"
+                        sudo pacman -S --needed git base-devel
+                        git clone https://aur.archlinux.org/yay.git
+                        cd yay
+                        makepkg -si --noconfirm
+                        cd ..
+                        rm -rf yay
+                    fi
+                    yay -S overseerr --noconfirm
+                else
+                    echo -e "${RED}Unable to install Overseerr. Please install it manually.${NC}"
+                    continue
+                fi
+                sudo systemctl start overseerr
+                sudo systemctl enable overseerr
                 setup_nginx_config "overseerr" "5055"
-                echo -e "${GREEN}Overseerr installed. Port: 5055${NC}"
+                echo -e "${GREEN}Overseerr installed. Web interface accessible on port 5055${NC}"
                 ;;
             "Syncthing")
-                install_package syncthing
+                echo -e "${BLUE}Installing Syncthing...${NC}"
+                if command -v apt-get &> /dev/null; then
+                    # For Debian/Ubuntu systems
+                    sudo curl -s https://syncthing.net/release-key.txt | sudo apt-key add -
+                    echo "deb https://apt.syncthing.net/ syncthing stable" | sudo tee /etc/apt/sources.list.d/syncthing.list
+                    sudo apt-get update
+                    sudo apt-get install -y syncthing
+                elif command -v yum &> /dev/null || command -v dnf &> /dev/null; then
+                    # For CentOS/RHEL/Fedora systems
+                    sudo yum install -y yum-utils
+                    sudo yum-config-manager --add-repo https://download.syncthing.net/syncthing-rpm.repo
+                    sudo yum install -y syncthing
+                elif command -v pacman &> /dev/null; then
+                    sudo pacman -S --noconfirm syncthing
+                else
+                    echo -e "${RED}Unable to install Syncthing. Please install it manually.${NC}"
+                    continue
+                fi
+                sudo systemctl start syncthing@$USER
+                sudo systemctl enable syncthing@$USER
                 setup_nginx_config "syncthing" "8384"
-                echo -e "${GREEN}Syncthing installed. Port: 8384${NC}"
+                echo -e "${GREEN}Syncthing installed. Web interface accessible on port 8384${NC}"
                 ;;
             "Plex")
                 echo -e "${BLUE}Installing Plex Media Server...${NC}"
