@@ -81,17 +81,16 @@ EOF
     if [[ ${selected[0]} -eq 1 ]]; then
         cat << EOF >> docker-compose.yml
   rutorrent:
-    image: crazymax/rtorrent-rutorrent
+    image: diameter/rtorrent-rutorrent
     container_name: rutorrent
     ports:
-      - "8080:8080"
-      - "50000:50000"  # rTorrent DHT port
-      - "6881:6881/udp"  # rTorrent DHT port
-      - "8000:8000"  # XMLRPC port
-      - "9001:9001"  # WebDAV port
+      - "8080:80"
+      - "5000:5000"
+      - "51413:51413"
+      - "6881:6881/udp"
     volumes:
-      - ./rutorrent-data:/data
-      - $HOME/media:/media
+      - ./rutorrent-data:/config
+      - $HOME/media:/downloads
     environment:
       - PUID=1000
       - PGID=1000
