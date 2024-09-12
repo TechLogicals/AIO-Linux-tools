@@ -23,10 +23,21 @@ install_package() {
     fi
 }
 
+# Install Nginx first
+echo -e "${BLUE}Installing Nginx web server...${NC}"
+install_package nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
 # Function to display menu
 display_menu() {
     echo -e "${BLUE}Select options to install:${NC}"
     for i in "${!options[@]}"; do
+        if [[ $i -eq $selected_index ]]; then
+            echo -ne "> "
+        else
+            echo -ne "  "
+        fi
         if [[ ${selected[i]} -eq 1 ]]; then
             echo -e "${GREEN}[X] ${options[i]}${NC}"
         else
@@ -44,7 +55,7 @@ toggle_selection() {
     fi
 }
 
-# Define the list of installation options
+# Define options
 options=(
     "rTorrent + ruTorrent"
     "Deluge"
@@ -60,18 +71,19 @@ options=(
     "Quit"
 )
 
-# Initialize the selected array to track user choices
+# Initialize selected array and selected_index
 selected=()
 for i in "${!options[@]}"; do
     selected[$i]=0
 done
+selected_index=0
 
-# Main menu loop for user interaction
+# Main menu loop
 while true; do
     clear
     display_menu
 
-    # Read user input (arrow keys and Enter)
+    # Read user input
     read -rsn1 key
 
     case "$key" in
@@ -91,15 +103,11 @@ while true; do
     esac
 done
 
-# Install Nginx web server
-install_package nginx
-
-# Function to setup Nginx configuration for each application
+# Function to setup Nginx config
 setup_nginx_config() {
     local app_name=$1
     local port=$2
     
-    # Create Nginx configuration file for the application
     cat << EOF | sudo tee /etc/nginx/sites-available/$app_name
 server {
     listen 80;
@@ -115,7 +123,6 @@ server {
 }
 EOF
 
-    # Enable the Nginx configuration by creating a symbolic link
     sudo ln -s /etc/nginx/sites-available/$app_name /etc/nginx/sites-enabled/
 }
 
@@ -124,13 +131,12 @@ for i in "${!options[@]}"; do
     if [[ ${selected[i]} -eq 1 ]]; then
         case "${options[i]}" in
             "rTorrent + ruTorrent")
-                # Install rTorrent and ruTorrent
                 install_package rtorrent
+                # Install ruTorrent (assuming it's available in the package manager)
                 install_package rutorrent
                 setup_nginx_config "rutorrent" "8080"
                 echo -e "${GREEN}rTorrent + ruTorrent installed. Port: 8080${NC}"
                 
-                # Optionally set up password protection for ruTorrent
                 read -p "Do you want to password protect ruTorrent? (y/n) " answer
                 if [[ $answer =~ ^[Yy]$ ]]; then
                     read -p "Enter username for ruTorrent: " rutorrent_user
@@ -213,7 +219,6 @@ for i in "${!options[@]}"; do
     fi
 done
 
-# Restart Nginx to apply changes
 sudo systemctl restart nginx
 
 echo -e "${GREEN}Installation complete!, you will need to setup authentication on first run of most items${NC}"
