@@ -88,7 +88,7 @@ EOF
       - "50000:50000"  # rTorrent DHT port
       - "6881:6881/udp"  # rTorrent DHT port
       - "8000:8000"  # XMLRPC port
-      - "9000:9000"  # WebDAV port
+      - "9001:9001"  # WebDAV port
     volumes:
       - ./rutorrent-data:/data
       - $HOME/media:/media
