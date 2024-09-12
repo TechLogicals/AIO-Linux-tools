@@ -6,6 +6,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+HIGHLIGHT='\033[7m' # Highlight (reverse video)
 
 # Function to install packages based on distribution
 install_package() {
@@ -27,12 +28,21 @@ install_package() {
 display_menu() {
     echo -e "${BLUE}Select options to install:${NC}"
     for i in "${!options[@]}"; do
-        if [[ ${selected[i]} -eq 1 ]]; then
-            echo -e "${GREEN}[X] ${options[i]}${NC}"
+        if [[ $i -eq $selected_index ]]; then
+            if [[ ${selected[i]} -eq 1 ]]; then
+                echo -e "${HIGHLIGHT}${GREEN}[X] ${options[i]}${NC}"
+            else
+                echo -e "${HIGHLIGHT}[ ] ${options[i]}${NC}"
+            fi
         else
-            echo -e "[ ] ${options[i]}"
+            if [[ ${selected[i]} -eq 1 ]]; then
+                echo -e "${GREEN}[X] ${options[i]}${NC}"
+            else
+                echo -e "[ ] ${options[i]}"
+            fi
         fi
     done
+    echo -e "\nUse arrow keys to navigate, Enter to select/deselect, and Q to quit."
 }
 
 # Function to toggle selection
@@ -60,11 +70,12 @@ options=(
     "Quit"
 )
 
-# Initialize selected array
+# Initialize selected array and selected_index
 selected=()
 for i in "${!options[@]}"; do
     selected[$i]=0
 done
+selected_index=0
 
 # Main menu loop
 while true; do
@@ -76,10 +87,10 @@ while true; do
 
     case "$key" in
         A) # Up arrow
-            ((selected_index > 0)) && ((selected_index--))
+            ((selected_index > 0)) && ((selected_index--)) || selected_index=$((${#options[@]}-1))
             ;;
         B) # Down arrow
-            ((selected_index < ${#options[@]}-1)) && ((selected_index++))
+            ((selected_index < ${#options[@]}-1)) && ((selected_index++)) || selected_index=0
             ;;
         '') # Enter key
             if [[ "${options[selected_index]}" == "Quit" ]]; then
@@ -87,6 +98,9 @@ while true; do
             else
                 toggle_selection $selected_index
             fi
+            ;;
+        q|Q) # Quit
+            break
             ;;
     esac
 done
@@ -98,6 +112,23 @@ install_package nginx wget unzip
 # Start and enable Nginx
 sudo systemctl start nginx
 sudo systemctl enable nginx
+
+# Check and create Nginx configuration directories if they don't exist
+if [ ! -d "/etc/nginx/sites-available" ]; then
+    sudo mkdir -p /etc/nginx/sites-available
+    echo -e "${BLUE}Created /etc/nginx/sites-available directory${NC}"
+fi
+
+if [ ! -d "/etc/nginx/sites-enabled" ]; then
+    sudo mkdir -p /etc/nginx/sites-enabled
+    echo -e "${BLUE}Created /etc/nginx/sites-enabled directory${NC}"
+fi
+
+# Check if the main Nginx configuration includes our sites-enabled directory
+if ! grep -q "include /etc/nginx/sites-enabled/\*" /etc/nginx/nginx.conf; then
+    sudo sed -i '/http {/a \    include /etc/nginx/sites-enabled/*;' /etc/nginx/nginx.conf
+    echo -e "${BLUE}Updated Nginx configuration to include sites-enabled directory${NC}"
+fi
 
 # Function to setup Nginx config
 setup_nginx_config() {
@@ -119,7 +150,10 @@ server {
 }
 EOF
 
-    sudo ln -s /etc/nginx/sites-available/$app_name /etc/nginx/sites-enabled/
+    # Create symlink only if it doesn't already exist
+    if [ ! -f "/etc/nginx/sites-enabled/$app_name" ]; then
+        sudo ln -s /etc/nginx/sites-available/$app_name /etc/nginx/sites-enabled/
+    fi
 }
 
 # Install selected options
