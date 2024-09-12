@@ -214,50 +214,16 @@ EOF
 
 # Function to display menu
 display_menu() {
-    local cursor_pos=$1
     clear
     echo -e "${BLUE}Select the applications you want to install:${NC}"
     for i in "${!options[@]}"; do
-        if [ $i -eq $cursor_pos ]; then
-            echo -e "${YELLOW}> ${NC}\c"
-        else
-            echo "  "
-        fi
-        
         if [[ ${selected[i]} -eq 1 ]]; then
-            echo -e "${GREEN}[X] ${options[i]}${NC}"
+            echo -e "${GREEN}[$((i+1))] [X] ${options[i]}${NC}"
         else
-            echo -e "[ ] ${options[i]}"
+            echo -e "[$((i+1))] [ ] ${options[i]}"
         fi
     done
-}
-
-# Function to handle user input
-handle_input() {
-    local key=$1
-    case $key in
-        A) # Up arrow
-            ((selected_index > 0)) && ((selected_index--)) || selected_index=$((${#options[@]}-1))
-            ;;
-        B) # Down arrow
-            ((selected_index < ${#options[@]}-1)) && ((selected_index++)) || selected_index=0
-            ;;
-        C) # Right arrow (do nothing)
-            ;;
-        D) # Left arrow (do nothing)
-            ;;
-        '') # Enter key
-            if [[ "${options[selected_index]}" == "Quit" ]]; then
-                return 1
-            else
-                toggle_selection $selected_index
-            fi
-            ;;
-        q|Q) # Quit
-            return 1
-            ;;
-    esac
-    return 0
+    echo -e "\n${YELLOW}Enter the number of an option to toggle, or 'q' to finish selection:${NC}"
 }
 
 # Function to toggle selection
@@ -284,42 +250,38 @@ main_menu() {
         "Plex"
         "Jellyfin"
         "Install SSL Certificate"
-        "Quit"
     )
 
-    # Initialize selected array and selected_index
+    # Initialize selected array
     selected=()
     for i in "${!options[@]}"; do
         selected[$i]=0
     done
-    selected_index=0
 
     # Main menu loop
     while true; do
-        display_menu $selected_index
+        display_menu
 
-        # Read user input
-        read -rsn1 mode # get 1 character
-        if [[ $mode == $'\x1b' ]]; then
-            read -rsn2 mode # read 2 more chars
+        read -r choice
+        if [[ $choice == "q" ]]; then
+            break
+        elif [[ $choice =~ ^[0-9]+$ ]] && [ $choice -ge 1 ] && [ $choice -le ${#options[@]} ]; then
+            toggle_selection $((choice-1))
+        else
+            echo -e "${RED}Invalid option. Please try again.${NC}"
+            read -n 1 -s -r -p "Press any key to continue..."
         fi
-        case $mode in
-            'q') echo QUITTING ; return ;;
-            'A') ((selected_index > 0)) && ((selected_index--)) || selected_index=$((${#options[@]}-1)) ;;
-            'B') ((selected_index < ${#options[@]}-1)) && ((selected_index++)) || selected_index=0 ;;
-            '') 
-                if [[ "${options[selected_index]}" == "Quit" ]]; then
-                    return
-                else
-                    toggle_selection $selected_index
-                fi
-                ;;
-        esac
     done
 }
 
 # Main script
 main_menu
+
+# Check if any option was selected
+if [[ ! " ${selected[@]} " =~ 1 ]]; then
+    echo -e "${RED}No options were selected. Exiting.${NC}"
+    exit 1
+fi
 
 install_docker
 install_docker_compose
