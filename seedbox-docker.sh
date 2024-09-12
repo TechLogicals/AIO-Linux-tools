@@ -295,7 +295,7 @@ create_media_directory
 create_docker_compose
 
 echo -e "${BLUE}Starting Docker containers...${NC}"
-docker-compose up -d
+sudo docker-compose up -d
 
 echo -e "${GREEN}Installation complete! Access Portainer at http://your-ip:9000 to manage your containers.${NC}"
 echo -e "${YELLOW}Your media files are stored in $HOME/media${NC}"
