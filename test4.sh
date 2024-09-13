@@ -104,15 +104,15 @@ server {
 
     location / {
         default_type text/html;
-        content_by_lua_block {
-            local handle = io.popen("/tmp/system_info.sh")
-            local result = handle:read("*a")
-            handle:close()
-            ngx.say(result)
-        }
+        fastcgi_pass unix:/var/run/fcgiwrap.socket;
+        fastcgi_param SCRIPT_FILENAME /tmp/system_info.sh;
+        include fastcgi_params;
     }
 }
 EOF
+
+# Install fcgiwrap
+sudo apt install -y fcgiwrap
 
 # Enable the Nginx server block
 sudo ln -s /etc/nginx/sites-available/system_info /etc/nginx/sites-enabled/
@@ -123,7 +123,8 @@ sudo rm /etc/nginx/sites-enabled/default
 # Test Nginx configuration
 sudo nginx -t
 
-# Restart Nginx
+# Restart Nginx and fcgiwrap
 sudo systemctl restart nginx
+sudo systemctl restart fcgiwrap
 
 echo "Installation complete. Access the system information page at http://localhost"
