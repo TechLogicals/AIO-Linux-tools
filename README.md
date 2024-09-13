@@ -22,4 +22,8 @@ The Desktops script installs different desktops on your system and configures th
 
 ALL THESE SCRIPTS WORK ON MOST LINUX OPERATING SYSTEMS. Debian/Ubuntu, Fedora , arch etc
 
+Debian 
+[![asciicast](https://asciinema.org/a/675805.svg)](https://asciinema.org/a/675805)
+
+Arch
 [![asciicast](https://asciinema.org/a/C9mgbTu0GIUAw0jGcUjaonVHm.svg)](https://asciinema.org/a/C9mgbTu0GIUAw0jGcUjaonVHm)
