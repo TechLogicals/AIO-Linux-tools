@@ -31,6 +31,9 @@ get_gpu_info() {
     lspci | grep -i vga | awk -F: '{print $3}'
 }
 
+echo "Content-Type: text/html"
+echo ""
+
 cat << HTML
 <!DOCTYPE html>
 <html lang="en">
