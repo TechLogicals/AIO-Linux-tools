@@ -5,7 +5,7 @@ sudo apt update
 sudo apt install -y nginx
 
 # Install required packages
-sudo apt install -y sysstat lm-sensors
+sudo apt install -y sysstat lm-sensors fcgiwrap
 
 # Create a script to gather system information
 cat << 'EOF' > /tmp/system_info.sh
@@ -103,16 +103,12 @@ server {
     index index.html;
 
     location / {
-        default_type text/html;
-        fastcgi_pass unix:/var/run/fcgiwrap.socket;
+        fastcgi_pass unix:/var/run/fcgiwrap.sock;
         fastcgi_param SCRIPT_FILENAME /tmp/system_info.sh;
         include fastcgi_params;
     }
 }
 EOF
-
-# Install fcgiwrap
-sudo apt install -y fcgiwrap
 
 # Enable the Nginx server block
 sudo ln -s /etc/nginx/sites-available/system_info /etc/nginx/sites-enabled/
@@ -120,11 +116,18 @@ sudo ln -s /etc/nginx/sites-available/system_info /etc/nginx/sites-enabled/
 # Remove the default Nginx configuration
 sudo rm /etc/nginx/sites-enabled/default
 
+# Ensure fcgiwrap is running and socket is created
+sudo systemctl start fcgiwrap
+sudo systemctl enable fcgiwrap
+
+# Set correct permissions for the fcgiwrap socket
+sudo chown www-data:www-data /var/run/fcgiwrap.sock
+
 # Test Nginx configuration
 sudo nginx -t
 
-# Restart Nginx and fcgiwrap
+# Restart Nginx
 sudo systemctl restart nginx
-sudo systemctl restart fcgiwrap
 
 echo "Installation complete. Access the system information page at http://localhost"
+echo "If you encounter issues, check Nginx error logs: sudo tail -f /var/log/nginx/error.log"
