@@ -123,11 +123,17 @@ sudo systemctl enable fcgiwrap
 # Set correct permissions for the fcgiwrap socket
 sudo chown www-data:www-data /var/run/fcgiwrap.sock
 
+# Set correct permissions for the system_info.sh script
+sudo chown www-data:www-data /tmp/system_info.sh
+sudo chmod 755 /tmp/system_info.sh
+
 # Test Nginx configuration
 sudo nginx -t
 
-# Restart Nginx
+# Restart Nginx and fcgiwrap
 sudo systemctl restart nginx
+sudo systemctl restart fcgiwrap
 
 echo "Installation complete. Access the system information page at http://localhost"
 echo "If you encounter issues, check Nginx error logs: sudo tail -f /var/log/nginx/error.log"
+echo "Also check fcgiwrap logs: sudo journalctl -u fcgiwrap"
