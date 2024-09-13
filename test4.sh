@@ -125,6 +125,7 @@ sudo systemctl enable fcgiwrap
 
 # Set correct permissions for the fcgiwrap socket
 sudo chown www-data:www-data /var/run/fcgiwrap.socket
+sudo chmod 660 /var/run/fcgiwrap.socket
 
 # Set correct permissions for the system_info.sh script
 sudo chown www-data:www-data /tmp/system_info.sh
@@ -141,7 +142,7 @@ echo "Installation complete. Access the system information page at http://localh
 echo "If you encounter issues, check Nginx error logs: sudo tail -f /var/log/nginx/error.log"
 echo "Also check fcgiwrap logs: sudo journalctl -u fcgiwrap"
 
-# Verify fcgiwrap socket exists
+# Verify fcgiwrap socket exists and is running
 if [ ! -S /var/run/fcgiwrap.socket ]; then
     echo "Error: fcgiwrap socket not found. Creating it manually."
     sudo -u www-data /usr/sbin/fcgiwrap -s unix:/var/run/fcgiwrap.socket
@@ -151,7 +152,20 @@ fi
 sudo chown www-data:www-data /var/run/fcgiwrap.socket
 sudo chmod 660 /var/run/fcgiwrap.socket
 
+# Ensure fcgiwrap is running
+if ! pgrep fcgiwrap > /dev/null; then
+    echo "fcgiwrap is not running. Starting it..."
+    sudo systemctl start fcgiwrap
+fi
+
 # Restart Nginx one more time
 sudo systemctl restart nginx
 
+# Check if Nginx is running
+if ! systemctl is-active --quiet nginx; then
+    echo "Nginx is not running. Starting it..."
+    sudo systemctl start nginx
+fi
+
 echo "Additional checks and fixes applied. Please try accessing the page again."
+echo "If you still encounter issues, try rebooting the system."
