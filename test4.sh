@@ -103,7 +103,7 @@ server {
     index index.html;
 
     location / {
-        fastcgi_pass unix:/var/run/fcgiwrap.sock;
+        fastcgi_pass unix:/var/run/fcgiwrap.socket;
         fastcgi_param SCRIPT_FILENAME /tmp/system_info.sh;
         include fastcgi_params;
     }
@@ -121,7 +121,7 @@ sudo systemctl start fcgiwrap
 sudo systemctl enable fcgiwrap
 
 # Set correct permissions for the fcgiwrap socket
-sudo chown www-data:www-data /var/run/fcgiwrap.sock
+sudo chown www-data:www-data /var/run/fcgiwrap.socket
 
 # Set correct permissions for the system_info.sh script
 sudo chown www-data:www-data /tmp/system_info.sh
@@ -137,3 +137,18 @@ sudo systemctl restart fcgiwrap
 echo "Installation complete. Access the system information page at http://localhost"
 echo "If you encounter issues, check Nginx error logs: sudo tail -f /var/log/nginx/error.log"
 echo "Also check fcgiwrap logs: sudo journalctl -u fcgiwrap"
+
+# Verify fcgiwrap socket exists
+if [ ! -S /var/run/fcgiwrap.socket ]; then
+    echo "Error: fcgiwrap socket not found. Creating it manually."
+    sudo -u www-data /usr/sbin/fcgiwrap -s unix:/var/run/fcgiwrap.socket
+fi
+
+# Double-check permissions
+sudo chown www-data:www-data /var/run/fcgiwrap.socket
+sudo chmod 660 /var/run/fcgiwrap.socket
+
+# Restart Nginx one more time
+sudo systemctl restart nginx
+
+echo "Additional checks and fixes applied. Please try accessing the page again."
