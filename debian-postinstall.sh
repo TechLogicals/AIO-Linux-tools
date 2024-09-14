@@ -27,7 +27,7 @@ install_fastfetch() {
     cd build
     cmake ..
     cmake --build . --target fastfetch --target flashfetch
-    sudo cmake --install .
+    sudo cp fastfetch flashfetch /usr/local/bin/
     cd ../..
     rm -rf fastfetch
     echo "fastfetch" >> ~/.bashrc
