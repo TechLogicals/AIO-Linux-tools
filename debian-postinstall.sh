@@ -6,9 +6,42 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Function to detect the Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/lsb-release ]; then
+        . /etc/lsb-release
+        echo "$DISTRIB_ID" | tr '[:upper:]' '[:lower:]'
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect the Linux distribution
+DISTRO=$(detect_distro)
+
 # Function to install packages
 install_package() {
-    sudo apt-get install -y "$@"
+    case "$DISTRO" in
+        ubuntu|debian)
+            sudo apt-get install -y "$@"
+            ;;
+        fedora)
+            sudo dnf install -y "$@"
+            ;;
+        centos|rhel)
+            sudo yum install -y "$@"
+            ;;
+        arch)
+            sudo pacman -Syu --noconfirm "$@"
+            ;;
+        *)
+            echo -e "${RED}Unsupported distribution: $DISTRO${NC}"
+            exit 1
+            ;;
+    esac
 }
 
 # Function to install SDDM
@@ -59,7 +92,8 @@ install_and_configure_meslo_nerd_font() {
     echo -e "${GREEN}Meslo Nerd Font installed and terminal configured with font size 14.${NC}"
 }
 
-echo -e "${GREEN}Debian Post-Installation Script${NC}"
+echo -e "${GREEN}Linux Post-Installation Script${NC}"
+echo -e "${GREEN}Detected distribution: $DISTRO${NC}"
 
 # Ask if user wants to add a user to sudo
 read -p "Do you want to add a user to sudo? (y/n): " add_sudo_user
@@ -155,9 +189,3 @@ if [[ $install_fastfetch_choice =~ ^[Yy]$ ]]; then
 fi
 echo -e "${YELLOW}Meslo Nerd Font has been installed and your terminal has been configured to use it with font size 14.${NC}"
 echo -e "${YELLOW}If the font change doesn't appear, you may need to restart your terminal or configure it manually.${NC}"
-
-
-
-
-
-
