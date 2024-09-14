@@ -235,42 +235,40 @@ if [[ $cms_choice != "none" ]]; then
             echo -e "${GREEN}WordPress has been installed and configured.${NC}"
             echo -e "${BLUE}WordPress setup URL: http://$domain/wp-admin/install.php${NC}"
 
-            # Ask about WordPress themes
-            echo -e "${YELLOW}Do you want to install any of these popular WordPress themes?${NC}"
-            echo "1. Twenty Twenty-One"
-            echo "2. Astra"
-            echo "3. OceanWP"
-            echo "4. GeneratePress"
-            echo "5. Neve"
-            echo "6. None"
-            read -p "Enter your choice (1-6): " theme_choice
+            # Ask about WordPress themes using whiptail
+            theme_choice=$(whiptail --title "WordPress Themes" --menu "Choose a WordPress theme to install:" 20 78 6 \
+                "1" "Twenty Twenty-One (Already included)" \
+                "2" "Astra" \
+                "3" "OceanWP" \
+                "4" "GeneratePress" \
+                "5" "Neve" \
+                "6" "None" 3>&1 1>&2 2>&3)
 
             case $theme_choice in
                 1)
-                    # Twenty Twenty-One is already included in WordPress
-                    echo -e "${BLUE}Twenty Twenty-One theme is already included in WordPress.${NC}"
+                    whiptail --title "Theme Installation" --msgbox "Twenty Twenty-One theme is already included in WordPress." 8 78
                     ;;
                 2)
                     install_wordpress_theme "$web_root" "astra" "https://downloads.wordpress.org/theme/astra.zip"
-                    echo -e "${GREEN}Astra theme has been installed.${NC}"
+                    whiptail --title "Theme Installation" --msgbox "Astra theme has been installed." 8 78
                     ;;
                 3)
                     install_wordpress_theme "$web_root" "oceanwp" "https://downloads.wordpress.org/theme/oceanwp.zip"
-                    echo -e "${GREEN}OceanWP theme has been installed.${NC}"
+                    whiptail --title "Theme Installation" --msgbox "OceanWP theme has been installed." 8 78
                     ;;
                 4)
                     install_wordpress_theme "$web_root" "generatepress" "https://downloads.wordpress.org/theme/generatepress.zip"
-                    echo -e "${GREEN}GeneratePress theme has been installed.${NC}"
+                    whiptail --title "Theme Installation" --msgbox "GeneratePress theme has been installed." 8 78
                     ;;
                 5)
                     install_wordpress_theme "$web_root" "neve" "https://downloads.wordpress.org/theme/neve.zip"
-                    echo -e "${GREEN}Neve theme has been installed.${NC}"
+                    whiptail --title "Theme Installation" --msgbox "Neve theme has been installed." 8 78
                     ;;
                 6)
-                    echo -e "${YELLOW}No additional theme installed.${NC}"
+                    whiptail --title "Theme Installation" --msgbox "No additional theme installed." 8 78
                     ;;
                 *)
-                    echo -e "${RED}Invalid choice. No additional theme installed.${NC}"
+                    whiptail --title "Error" --msgbox "Invalid choice. No additional theme installed." 8 78
                     ;;
             esac
             ;;
