@@ -115,7 +115,7 @@ install_dotfiles() {
     rm -rf "/tmp/$name-dotfiles"
 }
 
-# Function to provide information about using the dotfiles
+# Function to provide information about using the dotfiles by repo
 provide_usage_info() {
     local name=$1
     case $name in
