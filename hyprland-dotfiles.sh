@@ -4,13 +4,18 @@
 install_go() {
     if ! command -v go &> /dev/null; then
         echo "Installing Go..."
-        # You may need to adjust this based on your system and desired Go version
-        wget https://golang.org/dl/go1.17.linux-amd64.tar.gz
-        sudo tar -C /usr/local -xzf go1.17.linux-amd64.tar.gz
-        echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
-        source ~/.bashrc
-        rm go1.17.linux-amd64.tar.gz
+        wget https://go.dev/dl/go1.20.5.linux-amd64.tar.gz
+        sudo tar -C /usr/local -xzf go1.20.5.linux-amd64.tar.gz
+        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.profile
+        source ~/.profile
+        rm go1.20.5.linux-amd64.tar.gz
+        if ! command -v go &> /dev/null; then
+            echo "Go installation failed. Please install Go manually and try again."
+            exit 1
+        fi
     fi
+    echo "Go is installed and available."
 }
 
 # Install Bubble Tea
@@ -62,17 +67,14 @@ install_dotfiles() {
     echo "Installing $name dotfiles..."
     git clone "$repo" "/tmp/$name-dotfiles"
     
-    # Check if there's an install script and run it if it exists
     if [ -f "/tmp/$name-dotfiles/install.sh" ]; then
         echo "Found install script. Running it..."
         chmod +x "/tmp/$name-dotfiles/install.sh"
         "/tmp/$name-dotfiles/install.sh"
     else
-        # If no install script, copy files manually
         cp -r "/tmp/$name-dotfiles/.config/"* "$HOME/.config/"
     fi
     
-    # Install specific dependencies for each dotfile set
     case $name in
         "ChrisTitusTech")
             sudo pacman -S --noconfirm rofi dunst picom || sudo apt install -y rofi dunst picom || sudo dnf install -y rofi dunst picom
@@ -323,11 +325,3 @@ echo "Installation complete!"
 echo "Please log out and log back in, or reboot your system, to ensure all changes take effect."
 echo "To start Hyprland, run the command: Hyprland"
 echo "Note: You may need to configure your display manager to show Hyprland as a session option."
-
-
-
-
-
-
-
-
