@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#!/bin/bash
+
 # Install Go if not already installed
 install_go() {
     if ! command -v go &> /dev/null; then
@@ -192,8 +194,12 @@ echo "Welcome to the Hyprland and dotfiles installer!"
 install_go
 install_bubbletea
 
+# Create a temporary directory for the Go program
+temp_dir=$(mktemp -d)
+cd "$temp_dir"
+
 # Create a Go file for the Bubble Tea menu
-cat << EOF > menu.go
+cat << EOF > main.go
 package main
 
 import (
@@ -303,11 +309,34 @@ func main() {
 EOF
 
 # Run the Bubble Tea menu
-go run menu.go
+go mod init hyprland-menu
+go mod tidy
+go run main.go
+
+# Return to the original directory
+cd -
+
+# Clean up the temporary directory
+rm -rf "$temp_dir"
+
+# Define the dotfiles repositories
+declare -A dotfiles=(
+    ["ChrisTitusTech"]="https://github.com/ChrisTitusTech/hyprland-titus|ChrisTitusTech"
+    ["linuxmobile"]="https://github.com/linuxmobile/hyprland-dots|linuxmobile"
+    ["prasanthrangan"]="https://github.com/prasanthrangan/hyprdots|prasanthrangan"
+    ["JaKooLit"]="https://github.com/JaKooLit/Hyprland-Dots|JaKooLit"
+    ["end-4"]="https://github.com/end-4/dots-hyprland|end-4"
+    ["iamverysimp1e"]="https://github.com/iamverysimp1e/dots|iamverysimp1e"
+    ["nawfalmrouyan"]="https://github.com/nawfalmrouyan/hyprland|nawfalmrouyan"
+    ["notusknot"]="https://github.com/notusknot/dotfiles-nix|notusknot"
+    ["ML4W (Stephan Raabe)"]="https://gitlab.com/stephan-raabe/dotfiles.git|ML4W"
+    ["Fufexan"]="https://github.com/fufexan/dotfiles|Fufexan"
+    ["Vaxry"]="https://github.com/Vaxry/hyprdots|Vaxry"
+    ["Flick0"]="https://github.com/Flick0/dotfiles|Flick0"
+)
 
 # Process user selection
-for i in "${!selected[@]}"; do
-    choice=${choices[$i]}
+for choice in "${selected[@]}"; do
     case $choice in
         "Install Hyprland")
             install_hyprland
