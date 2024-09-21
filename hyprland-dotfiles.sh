@@ -1,31 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
-# Install Go if not already installed
-install_go() {
-    if ! command -v go &> /dev/null; then
-        echo "Installing Go..."
-        wget https://go.dev/dl/go1.20.5.linux-amd64.tar.gz
-        sudo tar -C /usr/local -xzf go1.20.5.linux-amd64.tar.gz
-        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.profile
-        source ~/.profile
-        rm go1.20.5.linux-amd64.tar.gz
-        if ! command -v go &> /dev/null; then
-            echo "Go installation failed. Please install Go manually and try again."
-            exit 1
-        fi
-    fi
-    echo "Go is installed and available."
-}
-
-# Install Bubble Tea
-install_bubbletea() {
-    echo "Installing Bubble Tea..."
-    go install github.com/charmbracelet/bubbletea@latest
-}
-
 # Function to install Hyprland and all necessary dependencies
 install_hyprland() {
     echo "Installing Hyprland and all necessary dependencies..."
@@ -102,7 +76,7 @@ install_dotfiles() {
         "notusknot")
             echo "This is a Nix-based configuration. Please ensure you have Nix installed."
             ;;
-        "ML4W (Stephan Raabe)")
+        "ML4W")
             sudo pacman -S --noconfirm rofi dunst || sudo apt install -y rofi dunst || sudo dnf install -y rofi dunst
             ;;
         "Fufexan")
@@ -163,7 +137,7 @@ provide_usage_info() {
             echo "Follow the repository instructions for Nix-specific setup steps."
             echo "To use with Hyprland, you may need to integrate these configs manually."
             ;;
-        "ML4W (Stephan Raabe)")
+        "ML4W")
             echo "ML4W dotfiles offer a comprehensive Hyprland setup with additional tools."
             echo "Use the provided scripts to customize your environment."
             echo "Start Hyprland using: Hyprland"
@@ -187,138 +161,6 @@ provide_usage_info() {
     esac
 }
 
-# Main script
-echo "Welcome to the Hyprland and dotfiles installer!"
-
-# Install Go and Bubble Tea
-install_go
-install_bubbletea
-
-# Create a temporary directory for the Go program
-temp_dir=$(mktemp -d)
-cd "$temp_dir"
-
-# Create a Go file for the Bubble Tea menu
-cat << EOF > main.go
-package main
-
-import (
-    "fmt"
-    "os"
-
-    tea "github.com/charmbracelet/bubbletea"
-)
-
-type model struct {
-    choices  []string
-    cursor   int
-    selected map[int]struct{}
-}
-
-func initialModel() model {
-    return model{
-        choices: []string{
-            "Install Hyprland",
-            "ChrisTitusTech",
-            "linuxmobile",
-            "prasanthrangan",
-            "JaKooLit",
-            "end-4",
-            "iamverysimp1e",
-            "nawfalmrouyan",
-            "notusknot",
-            "ML4W (Stephan Raabe)",
-            "Fufexan",
-            "Vaxry",
-            "Flick0",
-        },
-        selected: make(map[int]struct{}),
-    }
-}
-
-func (m model) Init() tea.Cmd {
-    return nil
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-    switch msg := msg.(type) {
-    case tea.KeyMsg:
-        switch msg.String() {
-        case "ctrl+c", "q":
-            return m, tea.Quit
-        case "up", "k":
-            if m.cursor > 0 {
-                m.cursor--
-            }
-        case "down", "j":
-            if m.cursor < len(m.choices)-1 {
-                m.cursor++
-            }
-        case "enter", " ":
-            _, ok := m.selected[m.cursor]
-            if ok {
-                delete(m.selected, m.cursor)
-            } else {
-                m.selected[m.cursor] = struct{}{}
-            }
-        }
-    }
-    return m, nil
-}
-
-func (m model) View() string {
-    s := "What would you like to install?\n\n"
-
-    for i, choice := range m.choices {
-        cursor := " "
-        if m.cursor == i {
-            cursor = ">"
-        }
-
-        checked := " "
-        if _, ok := m.selected[i]; ok {
-            checked = "x"
-        }
-
-        s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-    }
-
-    s += "\nPress q to quit and install.\n"
-
-    return s
-}
-
-func main() {
-    p := tea.NewProgram(initialModel())
-    m, err := p.Run()
-    if err != nil {
-        fmt.Printf("Alas, there's been an error: %v", err)
-        os.Exit(1)
-    }
-
-    if len(m.(model).selected) == 0 {
-        fmt.Println("No items selected")
-        return
-    }
-
-    fmt.Println("Selected items:")
-    for i := range m.(model).selected {
-        fmt.Printf("- %s\n", m.(model).choices[i])
-    }
-}
-EOF
-
-# Run the Bubble Tea menu
-go mod init hyprland-menu
-go mod tidy
-go run main.go
-
-# Return to the original directory
-cd -
-
-# Clean up the temporary directory
-rm -rf "$temp_dir"
-
 # Define the dotfiles repositories
 declare -A dotfiles=(
     ["ChrisTitusTech"]="https://github.com/ChrisTitusTech/hyprland-titus|ChrisTitusTech"
@@ -334,6 +176,32 @@ declare -A dotfiles=(
     ["Vaxry"]="https://github.com/Vaxry/hyprdots|Vaxry"
     ["Flick0"]="https://github.com/Flick0/dotfiles|Flick0"
 )
+
+# Main script
+echo "Welcome to the Hyprland and dotfiles installer!"
+
+# Display menu and get user selection
+options=("Install Hyprland" "${!dotfiles[@]}")
+selected=()
+
+while true; do
+    echo "Select options (space-separated numbers, 0 to finish):"
+    for i in "${!options[@]}"; do
+        echo "$((i+1)). ${options[i]}"
+    done
+    
+    read -p "Enter your choices: " choices
+    
+    if [[ $choices == "0" ]]; then
+        break
+    fi
+    
+    for choice in $choices; do
+        if (( choice > 0 && choice <= ${#options[@]} )); then
+            selected+=("${options[choice-1]}")
+        fi
+    done
+done
 
 # Process user selection
 for choice in "${selected[@]}"; do
