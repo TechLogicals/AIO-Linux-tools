@@ -185,7 +185,21 @@ options=("Install Hyprland" "${!dotfiles[@]}")
 selected=()
 
 while true; do
-    echo "Select options (space-separated numbers, 0 to finish):"
+    clear
+    echo "Welcome to the Hyprland and dotfiles installer!"
+    echo "================================================"
+    
+    if [ ${#selected[@]} -gt 0 ]; then
+        echo "Currently selected options:"
+        for item in "${selected[@]}"; do
+            echo "- $item"
+        done
+        echo "================================================"
+        echo "Press 0 to proceed with installation, or continue selecting."
+        echo "================================================"
+    fi
+    
+    echo "Select options (space-separated numbers):"
     for i in "${!options[@]}"; do
         echo "$((i+1)). ${options[i]}"
     done
@@ -193,17 +207,21 @@ while true; do
     read -p "Enter your choices: " choices
     
     if [[ $choices == "0" ]]; then
+        if [ ${#selected[@]} -eq 0 ]; then
+            echo "No options selected. Please select at least one option."
+            read -p "Press Enter to continue..."
+            continue
+        fi
         break
     fi
     
     for choice in $choices; do
         if (( choice > 0 && choice <= ${#options[@]} )); then
-            selected+=("${options[choice-1]}")
+            if [[ ! " ${selected[@]} " =~ " ${options[choice-1]} " ]]; then
+                selected+=("${options[choice-1]}")
+            fi
         fi
     done
-
-    echo "Selected options: ${selected[*]}"
-    echo "Press 0 to confirm and proceed with installation, or continue selecting."
 done
 
 # Process user selection
