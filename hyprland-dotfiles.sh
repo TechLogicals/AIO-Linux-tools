@@ -201,6 +201,9 @@ while true; do
             selected+=("${options[choice-1]}")
         fi
     done
+
+    echo "Selected options: ${selected[*]}"
+    echo "Press 0 to confirm and proceed with installation, or continue selecting."
 done
 
 # Process user selection
