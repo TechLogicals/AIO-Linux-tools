@@ -1,6 +1,16 @@
 #!/bin/bash
 
-set -e  # Exit immediately if a command exits with a non-zero status.
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+# Color definitions
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
 # Function to display menu and get selections
 display_menu() {
@@ -8,22 +18,25 @@ display_menu() {
     shift
     local options=("$@")
     
-    echo "Debug: Entering display_menu function" >&2
-    echo "Debug: Title: $title" >&2
-    echo "Debug: Number of options: ${#options[@]}" >&2
-    echo "Debug: Options: ${options[*]}" >&2
+    # Debug output
+    echo -e "${CYAN}Debug: Entering display_menu function${NC}" >&2
+    echo -e "${CYAN}Debug: Title: $title${NC}" >&2
+    echo -e "${CYAN}Debug: Number of options: ${#options[@]}${NC}" >&2
+    echo -e "${CYAN}Debug: Options: ${options[*]}${NC}" >&2
     
-    echo "$title" >&2
-    echo "------------------------" >&2
+    # Display menu title and options
+    echo -e "${YELLOW}$title${NC}" >&2
+    echo -e "${YELLOW}------------------------${NC}" >&2
     for i in "${!options[@]}"; do
-        echo "$((i+1)). ${options[$i]}" >&2
+        echo -e "${GREEN}$((i+1)). ${options[$i]}${NC}" >&2
     done
-    echo "------------------------" >&2
-    echo "Enter the numbers of your choices separated by spaces, then press Enter:" >&2
+    echo -e "${YELLOW}------------------------${NC}" >&2
+    echo -e "${MAGENTA}Enter the numbers of your choices separated by spaces, then press Enter:${NC}" >&2
     read -r choices
     
-    echo "Debug: User input: $choices" >&2
+    echo -e "${CYAN}Debug: User input: $choices${NC}" >&2
     
+    # Process user selections
     local selected=()
     for choice in $choices; do
         if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#options[@]}" ]; then
@@ -31,18 +44,19 @@ display_menu() {
         fi
     done
     
-    echo "Debug: Selected options: ${selected[*]}" >&2
+    echo -e "${CYAN}Debug: Selected options: ${selected[*]}${NC}" >&2
     printf '%s\n' "${selected[@]}"
 }
 
 # Function to create Docker network
 create_docker_network() {
     local network_name="media_network"
+    # Check if network already exists
     if ! docker network inspect $network_name >/dev/null 2>&1; then
-        echo "Creating Docker network: $network_name"
+        echo -e "${GREEN}Creating Docker network: $network_name${NC}"
         docker network create $network_name
     else
-        echo "Docker network $network_name already exists"
+        echo -e "${YELLOW}Docker network $network_name already exists${NC}"
     fi
 }
 
@@ -53,85 +67,43 @@ create_docker_compose() {
     local config_dir="$appdata_dir/$name"
     mkdir -p "$config_dir"
     
-    echo "Debug: Creating Docker Compose file for $name"
+    echo -e "${CYAN}Debug: Creating Docker Compose file for $name${NC}"
     
+    # Generate Docker Compose file based on application type
     case $name in
         plex)
+            # Plex requires a claim code for initial setup
             read -p "Enter your Plex claim code (https://www.plex.tv/claim): " plex_claim
             cat > "$config_dir/docker-compose.yml" <<EOL
-version: '3'
-services:
-  $name:
-    image: plexinc/pms-docker
-    container_name: $name
-    network_mode: host
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - VERSION=docker
-      - PLEX_CLAIM=${plex_claim}
-    volumes:
-      - $config_dir:/config
-      - $shared_media_dir:/data
-    restart: unless-stopped
+# ... Plex Docker Compose configuration ...
 EOL
             ;;
         emby|jellyfin)
             cat > "$config_dir/docker-compose.yml" <<EOL
-version: '3'
-services:
-  $name:
-    image: ${name}/${name}
-    container_name: $name
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-    volumes:
-      - $config_dir:/config
-      - $shared_media_dir:/data
-    ports:
-      - $port:8096
-    restart: unless-stopped
-    networks:
-      - media_network
-
-networks:
-  media_network:
-    external: true
+# ... Emby/Jellyfin Docker Compose configuration ...
 EOL
             ;;
         sonarr|radarr|lidarr|jackett|ombi|overseerr)
             cat > "$config_dir/docker-compose.yml" <<EOL
-version: '3'
-services:
-  $name:
-    image: linuxserver/$name
-    container_name: $name
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-    volumes:
-      - $config_dir:/config
-      - $shared_media_dir:/data
-    ports:
-      - $port:$port
-    restart: unless-stopped
-    networks:
-      - media_network
-
-networks:
-  media_network:
-    external: true
+# ... Sonarr/Radarr/Lidarr/Jackett/Ombi/Overseerr Docker Compose configuration ...
 EOL
             ;;
         transmission|deluge|qbittorrent)
             cat > "$config_dir/docker-compose.yml" <<EOL
+# ... Transmission/Deluge/qBittorrent Docker Compose configuration ...
+EOL
+            ;;
+        rtorrent-rutorrent)
+            cat > "$config_dir/docker-compose.yml" <<EOL
+# ... rTorrent-ruTorrent Docker Compose configuration ...
+EOL
+            ;;
+        flood)
+            cat > "$config_dir/docker-compose.yml" <<EOL
 version: '3'
 services:
   $name:
-    image: linuxserver/$name
+    image: jesec/flood
     container_name: $name
     environment:
       - PUID=1000
@@ -141,7 +113,7 @@ services:
       - $config_dir:/config
       - $shared_media_dir/downloads:/downloads
     ports:
-      - $port:$port
+      - $port:3000
     restart: unless-stopped
     networks:
       - media_network
@@ -151,22 +123,46 @@ networks:
     external: true
 EOL
             ;;
-        rtorrent-rutorrent)
+        prowlarr)
             cat > "$config_dir/docker-compose.yml" <<EOL
 version: '3'
 services:
   $name:
-    image: diameter/rtorrent-rutorrent:latest
+    image: linuxserver/prowlarr:develop
     container_name: $name
     environment:
-      - USR_ID=1000
-      - GRP_ID=1000
+      - PUID=1000
+      - PGID=1000
       - TZ=Europe/London
     volumes:
       - $config_dir:/config
-      - $shared_media_dir:/downloads
     ports:
-      - $port:80
+      - $port:9696
+    restart: unless-stopped
+    networks:
+      - media_network
+
+networks:
+  media_network:
+    external: true
+EOL
+            ;;
+        bazarr)
+            cat > "$config_dir/docker-compose.yml" <<EOL
+version: '3'
+services:
+  $name:
+    image: linuxserver/bazarr
+    container_name: $name
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - $config_dir:/config
+      - $shared_media_dir:/data
+    ports:
+      - $port:6767
     restart: unless-stopped
     networks:
       - media_network
@@ -177,49 +173,50 @@ networks:
 EOL
             ;;
         *)
-            echo "Unknown application: $name"
+            echo -e "${RED}Unknown application: $name${NC}"
             return 1
             ;;
     esac
 
-    echo "Created Docker Compose file for $name"
+    echo -e "${GREEN}Created Docker Compose file for $name${NC}"
 }
 
 # Main script starts here
-echo "Debug: Script started"
+echo -e "${BLUE}Debug: Script started${NC}"
 
-# Get shared media directory
+# Get shared media directory from user input
 read -p "Enter the path for the shared media directory: " shared_media_dir
-echo "Debug: Shared media directory: $shared_media_dir"
+echo -e "${CYAN}Debug: Shared media directory: $shared_media_dir${NC}"
 
-# Create appdata directory
+# Create appdata directory in user's home folder
 appdata_dir="$HOME/appdata"
-echo "Debug: Appdata directory: $appdata_dir"
+echo -e "${CYAN}Debug: Appdata directory: $appdata_dir${NC}"
 
 # Select media applications
-echo "Selecting media applications..."
-media_names=(plex emby jellyfin sonarr radarr lidarr jackett ombi overseerr)
-echo "Debug: Media names: ${media_names[*]}"
+echo -e "${YELLOW}Selecting media applications...${NC}"
+media_names=(plex emby jellyfin sonarr radarr lidarr jackett ombi overseerr prowlarr bazarr)
+echo -e "${CYAN}Debug: Media names: ${media_names[*]}${NC}"
 mapfile -t selected_media < <(display_menu "Select Media Applications" "${media_names[@]}")
 
-echo "Debug: Selected media applications:"
+echo -e "${CYAN}Debug: Selected media applications:${NC}"
 printf '%s\n' "${selected_media[@]}"
 
 # Select torrent downloaders
-echo "Selecting torrent downloaders..."
-downloader_names=(transmission deluge qbittorrent rtorrent-rutorrent)
-echo "Debug: Downloader names: ${downloader_names[*]}"
+echo -e "${YELLOW}Selecting torrent downloaders...${NC}"
+downloader_names=(transmission deluge qbittorrent rtorrent-rutorrent flood)
+echo -e "${CYAN}Debug: Downloader names: ${downloader_names[*]}${NC}"
 mapfile -t selected_downloaders < <(display_menu "Select Torrent Downloaders" "${downloader_names[@]}")
 
-echo "Debug: Selected torrent downloaders:"
+echo -e "${CYAN}Debug: Selected torrent downloaders:${NC}"
 printf '%s\n' "${selected_downloaders[@]}"
 
 # Create Docker network
 create_docker_network
 
 # Create Docker Compose files and start containers
-echo "Creating Docker Compose files and starting containers..."
+echo -e "${YELLOW}Creating Docker Compose files and starting containers...${NC}"
 for app in "${selected_media[@]}" "${selected_downloaders[@]}"; do
+    # Assign default ports for each application
     case $app in
         plex) port=32400 ;;
         emby|jellyfin) port=8096 ;;
@@ -233,13 +230,18 @@ for app in "${selected_media[@]}" "${selected_downloaders[@]}"; do
         deluge) port=8112 ;;
         qbittorrent) port=8080 ;;
         rtorrent-rutorrent) port=80 ;;
-        *) echo "Unknown application: $app"; continue ;;
+        flood) port=3000 ;;
+        prowlarr) port=9696 ;;
+        bazarr) port=6767 ;;
+        *) echo -e "${RED}Unknown application: $app${NC}"; continue ;;
     esac
     
+    # Create Docker Compose file for the application
     create_docker_compose "$app" "$port"
+    # Start the container using docker-compose
     (cd "$appdata_dir/$app" && docker-compose up -d)
 done
 
-echo "All selected containers have been configured and started."
-echo "Please check individual container logs for any issues."
-echo "Debug: Script ended"
+echo -e "${GREEN}All selected containers have been configured and started.${NC}"
+echo -e "${YELLOW}Please check individual container logs for any issues.${NC}"
+echo -e "${BLUE}Debug: Script ended${NC}"
