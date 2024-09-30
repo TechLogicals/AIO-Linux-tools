@@ -66,6 +66,9 @@ fi
 # Install fonts
 install_fonts
 
+# Ensure Zoxide is in the PATH
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+
 # Define bash prompts
 prompt1='PS1="\[\e[1;32m\]\u@\h \[\e[1;34m\]\w\[\e[0m\] $(starship prompt) \$ "'
 prompt2='PS1="\[\e[1;31m\]\u@\h \[\e[1;33m\]\w\[\e[0m\] $(starship prompt) \$ "'
