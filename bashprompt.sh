@@ -42,6 +42,8 @@ install_fonts() {
     
     # Clean up
     rm -rf /tmp/FiraCode /tmp/powerlevel10k
+    
+    # Update font cache
     sudo fc-cache -fv
 }
 
