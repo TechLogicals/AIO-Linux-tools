@@ -1,145 +1,153 @@
 #!/bin/bash
+# Script to install Starship, Zoxide, Fastfetch, and configure a nice bash prompt on any Linux distribution
+# by Tech Logicals
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Install required packages
-install_packages() {
-    if command_exists apt-get; then
-        sudo apt-get update
-        sudo apt-get install -y curl
-    elif command_exists pacman; then
-        sudo pacman -Syu --noconfirm curl
-    elif command_exists dnf; then
-        sudo dnf install -y curl
-    else
-        echo "Unsupported package manager. Please install curl manually."
-        exit 1
-    fi
-}
-
-# Install Starship
+# Function to install Starship
 install_starship() {
-    if ! command_exists starship; then
-        echo "Installing Starship..."
-        curl -sS https://starship.rs/install.sh | sh
-    else
-        echo "Starship is already installed."
-    fi
+    curl -sS https://starship.rs/install.sh | sh -s -- -y
 }
 
-# Install Zoxide
+# Function to install Zoxide
 install_zoxide() {
-    if ! command_exists zoxide; then
-        echo "Installing Zoxide..."
-        curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
-    else
-        echo "Zoxide is already installed."
-    fi
+    curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
 }
 
-# Configure Starship
-configure_starship() {
-    mkdir -p ~/.config
-    cat > ~/.config/starship.toml << EOL
-[character]
-success_symbol = "[➜](bold green)"
-error_symbol = "[✗](bold red)"
-
-[directory]
-style = "blue"
-
-[git_branch]
-symbol = "🌱 "
-style = "green"
-
-[git_status]
-style = "red"
-
-[time]
-disabled = false
-format = '🕙[\[ $time \]]($style) '
-time_format = "%T"
-style = "grey"
-
-[cmd_duration]
-min_time = 500
-format = "⏱️ [$duration]($style) "
-style = "yellow"
-
-[battery]
-full_symbol = "🔋"
-charging_symbol = "🔌"
-discharging_symbol = "⚡"
-
-[[battery.display]]
-threshold = 30
-style = "bold red"
-
-[package]
-symbol = "📦 "
-
-[rust]
-symbol = "🦀 "
-
-[python]
-symbol = "🐍 "
-
-[nodejs]
-symbol = "⬢ "
-
-[memory_usage]
-symbol = "🧠 "
-disabled = false
-threshold = -1
-style = "bold dimmed green"
-
-[aws]
-symbol = "🅰 "
-
-[docker_context]
-symbol = "🐳 "
-
-[kubernetes]
-symbol = "☸ "
-EOL
+# Function to install Fastfetch on Debian-based distros
+install_fastfetch_debian() {
+    sudo apt update
+    sudo apt install -y fastfetch
 }
 
-# Configure shell (Bash or Zsh)
-configure_shell() {
-    if [ -n "$BASH_VERSION" ]; then
-        config_file="$HOME/.bashrc"
-    elif [ -n "$ZSH_VERSION" ]; then
-        config_file="$HOME/.zshrc"
-    else
-        echo "Unsupported shell. Please use Bash or Zsh."
-        exit 1
-    fi
-
-    # Add Starship init
-    echo 'eval "$(starship init $SHELL)"' >> "$config_file"
-
-    # Add Zoxide init and alias
-    echo 'eval "$(zoxide init $SHELL)"' >> "$config_file"
-    echo 'alias cd="z"' >> "$config_file"
-
-    # Enable autocompletion
-    echo 'if [ -f /usr/share/bash-completion/bash_completion ]; then' >> "$config_file"
-    echo '    . /usr/share/bash-completion/bash_completion' >> "$config_file"
-    echo 'elif [ -f /etc/bash_completion ]; then' >> "$config_file"
-    echo '    . /etc/bash_completion' >> "$config_file"
-    echo 'fi' >> "$config_file"
-
-    echo "Shell configuration updated. Please restart your shell or source $config_file"
+# Function to install Fastfetch on Red Hat-based distros
+install_fastfetch_redhat() {
+    sudo dnf install -y fastfetch
 }
 
-# Main execution
-install_packages
-install_starship
-install_zoxide
-configure_starship
-configure_shell
+# Function to install Fastfetch on Arch-based distros
+install_fastfetch_arch() {
+    sudo pacman -Syu --needed fastfetch
+}
 
-echo -e "\e[38;5;196mS\e[38;5;202me\e[38;5;226mt\e[38;5;082mu\e[38;5;021mp\e[38;5;093m \e[38;5;196mc\e[38;5;202mo\e[38;5;226mm\e[38;5;082mp\e[38;5;021ml\e[38;5;093me\e[38;5;196mt\e[38;5;202me\e[38;5;226m!\e[38;5;082m \e[38;5;021mE\e[38;5;093mn\e[38;5;196mj\e[38;5;202mo\e[38;5;226my\e[38;5;082m \e[38;5;021my\e[38;5;093mo\e[38;5;196mu\e[38;5;202mr\e[38;5;226m \e[38;5;082mn\e[38;5;021me\e[38;5;093mw\e[38;5;196m \e[38;5;202mc\e[38;5;226mo\e[38;5;082ml\e[38;5;021mo\e[38;5;093mr\e[38;5;196mf\e[38;5;202mu\e[38;5;226ml\e[38;5;082m \e[38;5;021mp\e[38;5;093mr\e[38;5;196mo\e[38;5;202mm\e[38;5;226mp\e[38;5;082mt\e[38;5;021m \e[38;5;093mw\e[38;5;196mi\e[38;5;202mt\e[38;5;226mh\e[38;5;082m \e[38;5;021mt\e[38;5;093mi\e[38;5;196mm\e[38;5;202me\e[38;5;226m \e[38;5;082md\e[38;5;021mi\e[38;5;093ms\e[38;5;196mp\e[38;5;202ml\e[38;5;226ma\e[38;5;082my\e[38;5;021m \e[38;5;093ma\e[38;5;196mn\e[38;5;202md\e[38;5;226m \e[38;5;082me\e[38;5;021mn\e[38;5;093mh\e[38;5;196ma\e[38;5;202mn\e[38;5;226mc\e[38;5;082me\e[38;5;021md\e[38;5;093m \e[38;5;196mn\e[38;5;202ma\e[38;5;226mv\e[38;5;082mi\e[38;5;021mg\e[38;5;093ma\e[38;5;196mt\e[38;5;202mi\e[38;5;226mo\e[38;5;082mn\e[38;5;021m!\e[38;5;093m \e[38;5;196mb\e[38;5;202my\e[38;5;226m \e[38;5;082mT\e[38;5;021me\e[38;5;093mc\e[38;5;196mh\e[38;5;202mL\e[38;5;226mo\e[38;5;082mg\e[38;5;021mi\e[38;5;093mc\e[38;5;196ma\e[38;5;202ml\e[38;5;226ms\e[0m"
+# Function to install fonts
+install_fonts() {
+    # Install Fira Code
+    git clone --depth=1 https://github.com/tonsky/FiraCode.git /tmp/FiraCode
+    sudo mkdir -p /usr/share/fonts/truetype/firacode
+    sudo cp /tmp/FiraCode/distr/ttf/*.ttf /usr/share/fonts/truetype/firacode/
+    
+    # Install Meslo Fonts
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /tmp/powerlevel10k
+    sudo mkdir -p /usr/share/fonts/truetype/meslo
+    sudo cp /tmp/powerlevel10k/Meslo/*.ttf /usr/share/fonts/truetype/meslo/
+    
+    # Clean up
+    rm -rf /tmp/FiraCode /tmp/powerlevel10k
+    sudo fc-cache -fv
+}
+
+# Detect the Linux distribution and call the appropriate function
+if [ -f /etc/debian_version ]; then
+    install_starship
+    install_zoxide
+    install_fastfetch_debian
+elif [ -f /etc/redhat-release ]; then
+    install_starship
+    install_zoxide
+    install_fastfetch_redhat
+elif [ -f /etc/arch-release ]; then
+    install_starship
+    install_zoxide
+    install_fastfetch_arch
+else
+    echo "Unsupported Linux distribution"
+    exit 1
+fi
+
+# Install fonts
+install_fonts
+
+# Ensure Zoxide is in the PATH
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+
+# Define bash prompts
+prompt1='PS1="\[\e[1;32m\]\u@\h \[\e[1;34m\]\w\[\e[0m\] $(starship prompt) \$ "'
+prompt2='PS1="\[\e[1;31m\]\u@\h \[\e[1;33m\]\w\[\e[0m\] $(starship prompt) \$ "'
+prompt3='PS1="\[\e[1;36m\]\u@\h \[\e[1;35m\]\w\[\e[0m\] $(starship prompt) \$ "'
+prompt4='PS1="\[\e[1;32m\]\u@\h \[\e[1;34m\]→ \[\e[0m\]$(starship prompt) \$ "'
+prompt5='PS1="\[\e[1;31m\]\u@\h \[\e[1;33m\]→ \[\e[0m\]$(starship prompt) \$ "'
+prompt6='PS1="\[\e[1;36m\]\u@\h \[\e[1;35m\]→ \[\e[0m\]$(starship prompt) \$ "'
+prompt_none='PS1="\$ "'  # Plain shell prompt
+
+# Display bash prompts to user
+echo "Please choose a bash prompt:"
+echo "1) Green and Blue: $prompt1"
+echo "2) Red and Yellow: $prompt2"
+echo "3) Cyan and Magenta: $prompt3"
+echo "4) Green with Arrow: $prompt4"
+echo "5) Red with Arrow: $prompt5"
+echo "6) Cyan with Arrow: $prompt6"
+echo "7) None (Plain Shell Prompt)"
+read -p "Enter the number of your choice: " choice
+
+# Apply the chosen bash prompt
+case $choice in
+    1)
+        echo "$prompt1" >> ~/.bashrc
+        ;;
+    2)
+        echo "$prompt2" >> ~/.bashrc
+        ;;
+    3)
+        echo "$prompt3" >> ~/.bashrc
+        ;;
+    4)
+        echo "$prompt4" >> ~/.bashrc
+        ;;
+    5)
+        echo "$prompt5" >> ~/.bashrc
+        ;;
+    6)
+        echo "$prompt6" >> ~/.bashrc
+        ;;
+    7)
+        echo "$prompt_none" >> ~/.bashrc
+        ;;
+    *)
+        echo "Invalid choice. Applying default prompt (Plain Shell Prompt)."
+        echo "$prompt_none" >> ~/.bashrc
+        ;;
+esac
+
+# Configure bash prompt with Starship
+echo 'eval "$(starship init bash)"' >> ~/.bashrc
+
+# Run Fastfetch on bash start
+echo 'fastfetch' >> ~/.bashrc
+
+# Ask user for font choice
+echo "Which font would you like to use for your terminal?"
+echo "1) Fira Code"
+echo "2) Meslo"
+read -p "Enter the number of your choice: " font_choice
+
+# Set font size (example: 12)
+read -p "Enter the font size (e.g., 12): " font_size
+
+# Save font choice and size to a configuration file (example: ~/.font_config)
+echo "font_family=${font_choice}" >> ~/.font_config
+echo "font_size=${font_size}" >> ~/.font_config
+
+# Ask user if they want auto-completion
+read -p "Do you want to enable auto-completion? (y/n): " auto_complete_choice
+
+if [[ "$auto_complete_choice" == "y" || "$auto_complete_choice" == "Y" ]]; then
+    echo 'if [ -f /etc/bash_completion ]; then' >> ~/.bashrc
+    echo '    . /etc/bash_completion' >> ~/.bashrc
+    echo 'fi' >> ~/.bashrc
+    echo "Auto-completion has been enabled."
+else
+    echo "Auto-completion will not be enabled."
+fi
+
+echo "Starship, Zoxide, Fastfetch, fonts, and configurations have been installed successfully."
+echo "Please restart your terminal or run 'source ~/.bashrc' to apply the changes."
