@@ -105,15 +105,26 @@ EOF
 # Function to build rTorrent from source
 function build_rtorrent() {
     echo "Building rTorrent from source..."
-    # Example build steps; adjust as necessary for your environment
+    
+    # Ensure the build directory is clean
+    if [ -d "/tmp/rtorrent" ]; then
+        rm -rf /tmp/rtorrent
+    fi
+
+    # Clone the rTorrent repository
     cd /tmp
     git clone https://github.com/rakshasa/rtorrent.git
     cd rtorrent
+
+    # Checkout the specified version
     git checkout $rtorrentver
-    ./autogen.sh
-    ./configure --with-xmlrpc-c --with-curl
-    make
-    make install
+
+    # Run the build process
+    ./autogen.sh || { echo "autogen.sh failed"; exit 1; }
+    ./configure --with-xmlrpc-c --with-curl || { echo "configure failed"; exit 1; }
+    make || { echo "make failed"; exit 1; }
+    sudo make install || { echo "make install failed"; exit 1; }
+
     echo "rTorrent build completed."
 }
 
