@@ -131,6 +131,14 @@ function build_rtorrent() {
     echo "rTorrent build completed."
 }
 
+# Function to install rTorrent using apt
+function install_rtorrent_apt() {
+    echo "Installing rTorrent with apt-get..."
+    apt-get update
+    apt-get install -y rtorrent
+    echo "rTorrent installation completed."
+}
+
 # Function to configure rTorrent version
 function set_rtorrent_version() {
     case $1 in
@@ -310,10 +318,10 @@ function install_rutorrent() {
     fi
 
     # Set up ruTorrent configuration
-    if [ -f "rutorrent/conf/config.php.default" ]; then
-        cp -r rutorrent/conf/config.php.default rutorrent/conf/config.php
-        sed -i "s/\$host = 'localhost';/\$host = '127.0.0.1';/" rutorrent/conf/config.php
-        sed -i "s/\$port = 80;/\$port = 80;/" rutorrent/conf/config.php
+    if [ -f "/var/www/html/rutorrent/conf/config.php.default" ]; then
+        cp -r /var/www/html/rutorrent/conf/config.php.default /var/www/html/rutorrent/conf/config.php
+        sed -i "s/\$host = 'localhost';/\$host = '127.0.0.1';/" /var/www/html/rutorrent/conf/config.php
+        sed -i "s/\$port = 80;/\$port = 80;/" /var/www/html/rutorrent/conf/config.php
     else
         echo "Configuration file not found. Please check the ruTorrent installation."
         exit 1
@@ -343,9 +351,7 @@ if [[ ! $rtorrentver == repo ]]; then
     echo "Building rTorrent from source..."
     build_rtorrent
 else
-    echo "Installing rTorrent with apt-get..."
-    rtorrent_apt
-    echo "rTorrent installation completed."
+    install_rtorrent_apt
 fi
 
 echo "Making ${user} directory structure..."
