@@ -9,6 +9,27 @@ export distribution=$(lsb_release -is)
 export release=$(lsb_release -rs)
 export codename=$(lsb_release -cs)
 
+# Initialize log file
+log="/var/log/rutorrent_install.log"
+
+# Function to log messages
+function log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> $log
+}
+
+# Function to install packages
+function apt_install() {
+    for package in "$@"; do
+        if ! dpkg -l | grep -q "^ii  $package "; then
+            echo "Installing $package..."
+            apt-get install -y "$package" >> $log 2>&1
+            log_message "Installed $package"
+        else
+            echo "$package is already installed."
+        fi
+    done
+}
+
 # Function to generate a random string
 function _string() { perl -le 'print map {(a..z,A..Z,0..9)[rand 62] } 0..pop' 15; }
 
@@ -81,6 +102,21 @@ EOF
     systemctl enable -q --now rtorrent@${user} 2>> $log
 }
 
+# Function to build rTorrent from source
+function build_rtorrent() {
+    echo "Building rTorrent from source..."
+    # Example build steps; adjust as necessary for your environment
+    cd /tmp
+    git clone https://github.com/rakshasa/rtorrent.git
+    cd rtorrent
+    git checkout $rtorrentver
+    ./autogen.sh
+    ./configure --with-xmlrpc-c --with-curl
+    make
+    make install
+    echo "rTorrent build completed."
+}
+
 # Function to configure rTorrent version
 function set_rtorrent_version() {
     case $1 in
@@ -147,13 +183,17 @@ function depends_rtorrent() {
     fi
 }
 
-# Function to install Nginx
+# Function to install or configure Nginx
 function install_nginx() {
-    echo "Installing Nginx..."
-    apt-get update
-    apt-get install -y nginx
-    systemctl enable nginx
-    systemctl start nginx
+    if command -v nginx > /dev/null; then
+        echo "Nginx is already installed. Configuring..."
+    else
+        echo "Installing Nginx..."
+        apt-get update
+        apt-get install -y nginx
+        systemctl enable nginx
+        systemctl start nginx
+    fi
 
     # Configure Nginx for ruTorrent
     cat > /etc/nginx/sites-available/rutorrent << EOF
@@ -274,16 +314,13 @@ whiptail_rtorrent
 
 depends_rtorrent
 
-# Install Nginx
-echo "Installing Nginx..."
+# Install or configure Nginx
 install_nginx
-echo "Nginx installation completed."
 
 # Build and install rTorrent based on the selected version
 if [[ ! $rtorrentver == repo ]]; then
     echo "Building rTorrent from source..."
     build_rtorrent
-    echo "rTorrent build completed."
 else
     echo "Installing rTorrent with apt-get..."
     rtorrent_apt
@@ -303,6 +340,6 @@ echo "rtorrent.rc setup completed."
 echo "Installing ruTorrent..."
 install_rutorrent
 echo "ruTorrent installation completed."
-echo "Thank you for using TechLogicals Installer"
+
 echo "rTorrent and ruTorrent installed and configured successfully."
 touch /install/.rtorrent.lock
