@@ -117,7 +117,10 @@ function build_rtorrent() {
     cd rtorrent
 
     # Checkout the specified version
-    git checkout $rtorrentver
+    if ! git checkout $rtorrentver; then
+        echo "Version $rtorrentver not found. Please check available versions."
+        exit 1
+    fi
 
     # Run the build process
     ./autogen.sh || { echo "autogen.sh failed"; exit 1; }
@@ -174,7 +177,7 @@ function set_rtorrent_version() {
             export rtorrentpgo='false'
             ;;
         *)
-            echo_error "$1 is not a valid rTorrent version"
+            echo "Invalid rTorrent version specified."
             exit 1
             ;;
     esac
@@ -183,10 +186,7 @@ function set_rtorrent_version() {
 # Function to install dependencies for rTorrent
 function depends_rtorrent() {
     if [[ ! $rtorrentver == repo ]]; then
-        APT='subversion dos2unix bc screen zip unzip sysstat build-essential comerr-dev
-        dstat automake libtool libcppunit-dev libssl-dev pkg-config libcurl4-openssl-dev
-        libsigc++-2.0-dev unzip curl libncurses5-dev yasm fontconfig libfontconfig1
-        libfontconfig1-dev mediainfo autoconf-archive'
+        APT='subversion dos2unix bc screen zip unzip sysstat build-essential automake libtool libssl-dev pkg-config libcurl4-openssl-dev libsigc++-2.0-dev'
         apt_install $APT
     else
         APT='screen zip unzip bc mediainfo curl'
@@ -298,16 +298,26 @@ function install_rutorrent() {
     APT='php php-cli php-curl php-mbstring php-xml php-zip php-gd'
     apt_install $APT
 
-    # Download and install ruTorrent
-    cd /var/www/html
-    git clone https://github.com/Novik/ruTorrent.git rutorrent
-    chown -R www-data:www-data rutorrent
-    chmod -R 755 rutorrent
+    # Check if the ruTorrent directory already exists
+    if [ -d "/var/www/html/rutorrent" ]; then
+        echo "ruTorrent directory already exists. Skipping clone."
+    else
+        # Download and install ruTorrent
+        cd /var/www/html
+        git clone https://github.com/Novik/ruTorrent.git rutorrent
+        chown -R www-data:www-data rutorrent
+        chmod -R 755 rutorrent
+    fi
 
     # Set up ruTorrent configuration
-    cp -r rutorrent/conf/config.php.default rutorrent/conf/config.php
-    sed -i "s/\$host = 'localhost';/\$host = '127.0.0.1';/" rutorrent/conf/config.php
-    sed -i "s/\$port = 80;/\$port = 80;/" rutorrent/conf/config.php
+    if [ -f "rutorrent/conf/config.php.default" ]; then
+        cp -r rutorrent/conf/config.php.default rutorrent/conf/config.php
+        sed -i "s/\$host = 'localhost';/\$host = '127.0.0.1';/" rutorrent/conf/config.php
+        sed -i "s/\$port = 80;/\$port = 80;/" rutorrent/conf/config.php
+    else
+        echo "Configuration file not found. Please check the ruTorrent installation."
+        exit 1
+    fi
 }
 
 # Main script execution
@@ -352,5 +362,11 @@ echo "Installing ruTorrent..."
 install_rutorrent
 echo "ruTorrent installation completed."
 
+# Ensure the /install directory exists before creating the lock file
+install_dir="/install"
+if [ ! -d "$install_dir" ]; then
+    mkdir -p "$install_dir"
+fi
+
+touch "$install_dir/.rtorrent.lock"
 echo "rTorrent and ruTorrent installed and configured successfully."
-touch /install/.rtorrent.lock
